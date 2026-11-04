@@ -73,8 +73,7 @@ target_link_libraries(
 
 add_executable(
     CollisionTests
-
-    tests/CollisionTests.cpp
+    ../tests/CollisionTests.cpp
     src/GameObject.cpp
     src/Collision.cpp
 )
