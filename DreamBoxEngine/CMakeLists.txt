@@ -45,6 +45,7 @@ add_executable(
     src/Wall.cpp
     src/Collision.cpp
 
+    tests/CollisionTests.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -63,6 +64,12 @@ target_include_directories(
 
 target_link_libraries(
     DreamBoxEngine
+    CollisionTests
     PRIVATE
     SDL3::SDL3
+)
+
+add_test(
+    NAME CollisionTests
+    COMMAND CollisionTests
 )
