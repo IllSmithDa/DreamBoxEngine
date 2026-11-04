@@ -34,6 +34,7 @@ FetchContent_MakeAvailable(SDL3)
 # DreamBox Engine
 # -------------------------
 
+
 add_executable(
     DreamBoxEngine
 
@@ -45,34 +46,43 @@ add_executable(
     src/Wall.cpp
     src/Collision.cpp
 
-    tests/CollisionTests.cpp
-
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
     include/DreamBox/Player.h
     include/DreamBox/GameObject.h
     include/DreamBox/Wall.h
     include/DreamBox/Collision.h
-
- "include/DreamBox/GameObject.h" "src/GameObject.cpp")
+)
 
 target_include_directories(
     DreamBoxEngine
     PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(
+    DreamBoxEngine
+    PRIVATE
+    SDL3::SDL3
+)
+
+
+# -------------------------
+# Collision Tests
+# -------------------------
+
+add_executable(
+    CollisionTests
+
+    tests/CollisionTests.cpp
+    src/GameObject.cpp
+    src/Collision.cpp
 )
 
 target_include_directories(
     CollisionTests
     PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
-
-
-target_link_libraries(
-    DreamBoxEngine
-    PRIVATE
-    SDL3::SDL3
 )
 
 target_link_libraries(
