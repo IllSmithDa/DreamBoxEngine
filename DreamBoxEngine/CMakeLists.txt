@@ -64,6 +64,11 @@ target_include_directories(
 
 target_link_libraries(
     DreamBoxEngine
+    PRIVATE
+    SDL3::SDL3
+)
+
+target_link_libraries(
     CollisionTests
     PRIVATE
     SDL3::SDL3
