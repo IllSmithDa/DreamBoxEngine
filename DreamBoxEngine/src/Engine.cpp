@@ -8,34 +8,66 @@ namespace DreamBox
     }
 
 
-    bool DreamBox::Engine::Initialize()
+    bool Engine::Initialize()
     {
         if (!SDL_Init(SDL_INIT_VIDEO))
         {
-            SDL_Log(
-                "Failed to initialize SDL: %s",
-                SDL_GetError()
-            );
-
             return false;
         }
 
         if (!SDL_CreateWindowAndRenderer(
-            "DreamBox Engine",
-            1280,
-            720,
-            SDL_WINDOW_RESIZABLE,
-            &m_window,
-            &m_renderer))
+                "DreamBox Engine",
+                1280,
+                720,
+                SDL_WINDOW_RESIZABLE,
+                &m_window,
+                &m_renderer))
         {
-            SDL_Log(
-                "Failed to create window and renderer: %s",
-                SDL_GetError()
-            );
-
             return false;
         }
+
         m_lastFrameTime = SDL_GetTicks();
+
+        // Left wall
+        m_walls.emplace_back(
+            50.0f,
+            50.0f,
+            40.0f,
+            600.0f
+        );
+
+        // Right wall
+        m_walls.emplace_back(
+            1190.0f,
+            50.0f,
+            40.0f,
+            600.0f
+        );
+
+        // Top wall
+        m_walls.emplace_back(
+            50.0f,
+            50.0f,
+            1180.0f,
+            40.0f
+        );
+
+        // Bottom wall
+        m_walls.emplace_back(
+            50.0f,
+            610.0f,
+            1180.0f,
+            40.0f
+        );
+
+        // Interior obstacle
+        m_walls.emplace_back(
+            600.0f,
+            250.0f,
+            60.0f,
+            250.0f
+        );
+
         return true;
     }
 
@@ -129,7 +161,10 @@ namespace DreamBox
         SDL_RenderClear(m_renderer);
 
         m_player.Render(m_renderer);
-        m_wall.Render(m_renderer);
+
+        for (const Wall& wall : m_walls) {
+            wall.Render(m_renderer);
+        }
 
         SDL_RenderPresent(m_renderer);
     }

@@ -43,12 +43,7 @@ namespace DreamBox
         };
 
 
-        Wall m_wall{
-        650.0f, // x
-        150.0f, // y
-        80.0f,  // width
-        400.0f  // height
-        };
+        std::vector<Wall> m_walls;
 
         Uint64 m_lastFrameTime = 0;
         float m_deltaTime = 0.0f;
