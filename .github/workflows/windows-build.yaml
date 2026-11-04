@@ -1,0 +1,55 @@
+name: DreamBox Engine - Windows Build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake
+        run: >
+          cmake -S . -B build
+          -G "Visual Studio 17 2022"
+          -A x64
+          -DSDL_SHARED=ON
+          -DSDL_STATIC=OFF
+
+      - name: Build DreamBox Engine
+        run: cmake --build build --config Release --parallel
+
+      - name: Package Executable
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+
+          $exe = Get-ChildItem build -Recurse -Filter DreamBoxEngine.exe |
+            Select-Object -First 1
+
+          if (-not $exe) {
+            throw "DreamBoxEngine.exe not found"
+          }
+
+          Copy-Item $exe.FullName dist/
+
+          $dll = Get-ChildItem build -Recurse -Filter SDL3.dll |
+            Select-Object -First 1
+
+          if (-not $dll) {
+            throw "SDL3.dll not found"
+          }
+
+          Copy-Item $dll.FullName dist/
+
+      - name: Upload Build
+        uses: actions/upload-artifact@v4
+        with:
+          name: DreamBoxEngine-Windows
+          path: dist/
+          if-no-files-found: error
