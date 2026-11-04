@@ -92,54 +92,61 @@ namespace DreamBox
 
     void Engine::Update()
     {
-        // Calculate time since the previous frame.
         Uint64 currentTime = SDL_GetTicks();
-
+    
         m_deltaTime =
             static_cast<float>(
                 currentTime - m_lastFrameTime
-                ) / 1000.0f;
-
+            ) / 1000.0f;
+        
         m_lastFrameTime = currentTime;
-
+        
         SDL_FPoint movement =
             m_player.GetMovement(
                 m_input,
                 m_deltaTime
             );
-
-        // Try horizontal movement first.
+        
+        // Horizontal movement
         m_player.Move(
             movement.x,
             0.0f
         );
-
-        if (Collision::Intersects(
-            m_player,
-            m_wall))
+    
+        for (const Wall& wall : m_walls)
         {
-            // Undo only the horizontal movement.
-            m_player.Move(
-                -movement.x,
-                0.0f
-            );
+            if (Collision::Intersects(
+                    m_player,
+                    wall))
+            {
+                m_player.Move(
+                    -movement.x,
+                    0.0f
+                );
+            
+                break;
+            }
         }
-
-        // Then try vertical movement.
+    
+        // Vertical movement
         m_player.Move(
             0.0f,
             movement.y
         );
-
-        if (Collision::Intersects(
-            m_player,
-            m_wall))
+    
+        for (const Wall& wall : m_walls)
         {
-            // Undo only the vertical movement.
-            m_player.Move(
-                0.0f,
-                -movement.y
-            );
+            if (Collision::Intersects(
+                    m_player,
+                    wall))
+            {
+                m_player.Move(
+                    0.0f,
+                    -movement.y
+                );
+            
+                break;
+            }
         }
     }
 
