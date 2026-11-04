@@ -1,4 +1,5 @@
 #include "DreamBox/Player.h"
+#include <cmath>
 
 namespace DreamBox
 {
@@ -52,39 +53,56 @@ namespace DreamBox
         float deltaTime
     ) const
     {
-        SDL_FPoint movement{
+        SDL_FPoint direction{
             0.0f,
             0.0f
         };
 
-        const float distance =
-            m_speed * deltaTime;
-
+        // Determine movement direction.
         if (input.IsKeyDown(SDL_SCANCODE_W) ||
             input.IsKeyDown(SDL_SCANCODE_UP))
         {
-            movement.y -= distance;
+            direction.y -= 1.0f;
         }
 
         if (input.IsKeyDown(SDL_SCANCODE_S) ||
             input.IsKeyDown(SDL_SCANCODE_DOWN))
         {
-            movement.y += distance;
+            direction.y += 1.0f;
         }
 
         if (input.IsKeyDown(SDL_SCANCODE_A) ||
             input.IsKeyDown(SDL_SCANCODE_LEFT))
         {
-            movement.x -= distance;
+            direction.x -= 1.0f;
         }
 
         if (input.IsKeyDown(SDL_SCANCODE_D) ||
             input.IsKeyDown(SDL_SCANCODE_RIGHT))
         {
-            movement.x += distance;
+            direction.x += 1.0f;
         }
 
-        return movement;
+        // Normalize diagonal movement so it has the same
+        // overall speed as horizontal or vertical movement.
+        const float length = std::sqrt(
+            direction.x * direction.x +
+            direction.y * direction.y
+        );
+
+        if (length > 0.0f)
+        {
+            direction.x /= length;
+            direction.y /= length;
+        }
+
+        const float distance =
+            m_speed * deltaTime;
+
+        return SDL_FPoint{
+            direction.x * distance,
+            direction.y * distance
+        };
     }
 
 
