@@ -11,5 +11,7 @@ endif()
 
 project ("DreamBoxEngine")
 
+include(CTest)
+
 # Include sub-projects.
 add_subdirectory ("DreamBoxEngine")
