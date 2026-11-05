@@ -1,11 +1,12 @@
 #pragma once
 
 #include <vector>
-
+#include <memory>
 #include "DreamBox/Scene.h"
 #include "DreamBox/Player.h"
 #include "DreamBox/Wall.h"
 
+#include "DreamBox/Scene.h"
 namespace DreamBox
 {
     class GameScene : public Scene
@@ -24,9 +25,11 @@ namespace DreamBox
 
     private:
         bool PlayerCollidesWithWall() const;
-
-        Player m_player;
-
-        std::vector<Wall> m_walls;
+        SDL_Window* m_window = nullptr;
+        SDL_Renderer* m_renderer = nullptr;
+        Input m_input;
+        std::unique_ptr<Scene> m_currentScene;
+        Uint64 m_lastFrameTime = 0;
+        float m_deltaTime = 0.0f;
     };
 }
