@@ -53,6 +53,8 @@ add_executable(
     include/DreamBox/GameObject.h
     include/DreamBox/Wall.h
     include/DreamBox/Collision.h
+    include/DreamBox/Scene.h
+    include/DreamBox/GameScene.h
 )
 
 target_include_directories(
