@@ -18,11 +18,6 @@ namespace DreamBox
             SDL_Renderer* renderer
         ) const override;
 
-        void DrawButton(
-            SDL_Renderer* renderer,
-            const SDL_FRect& button,
-            bool selected
-        ) const;
     private:
         enum class MenuOption{
             Play,
@@ -43,7 +38,7 @@ namespace DreamBox
             490.0f, 440.0f, 300.0f, 60.0f
         };
 
-        void MainMenuScene::DrawButton(
+        void DrawButton(
             SDL_Renderer* renderer,
             const SDL_FRect& button,
             bool selected
