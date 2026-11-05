@@ -31,5 +31,8 @@ namespace DreamBox
         std::unique_ptr<Scene> m_currentScene;
         Uint64 m_lastFrameTime = 0;
         float m_deltaTime = 0.0f;
+        private:
+        Player m_player;
+        std::vector<Wall> m_walls;
     };
 }
