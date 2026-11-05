@@ -25,6 +25,11 @@ namespace DreamBox
             Quit,
             Count
         };
+        void DrawButton(
+            SDL_Renderer* renderer,
+            const SDL_FRect& button,
+            bool selected
+        ) const;
         MenuOption m_selectedOption = MenuOption::Play;
         SDL_FRect m_playButton{
             490.0f, 280.0f, 300.0f, 60.0f
