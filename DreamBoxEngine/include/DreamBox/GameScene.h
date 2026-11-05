@@ -5,8 +5,6 @@
 #include "DreamBox/Scene.h"
 #include "DreamBox/Player.h"
 #include "DreamBox/Wall.h"
-
-#include "DreamBox/Scene.h"
 namespace DreamBox
 {
     class GameScene : public Scene
