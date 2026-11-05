@@ -30,7 +30,7 @@ namespace DreamBox
 
         m_lastFrameTime = SDL_GetTicks();
 
-        m_currentScene = std::make_unique<GameScene>();
+        ChangeScene(std::make_unique<GameScene>());
 
         return true;
     }
@@ -117,5 +117,10 @@ namespace DreamBox
             SDL_DestroyWindow(m_window);
             m_window = nullptr;
         }
+    }
+
+    void Engine::ChangeScene(std::unique_ptr<Scene> scene)
+    {
+        m_currentScene = std::move(scene);
     }
 }

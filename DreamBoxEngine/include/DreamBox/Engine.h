@@ -31,6 +31,8 @@ namespace DreamBox
 
         void Shutdown();
 
+        void ChangeScene(std::unique_ptr<Scene> scene);
+
     private:
     private:
         SDL_Window* m_window = nullptr;
