@@ -46,6 +46,8 @@ add_executable(
     src/GameObject.cpp
     src/Wall.cpp
     src/Collision.cpp
+    src/GameScene.cpp
+
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h

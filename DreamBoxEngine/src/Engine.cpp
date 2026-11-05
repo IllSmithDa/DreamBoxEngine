@@ -1,4 +1,6 @@
+#include <memory>
 #include "DreamBox/Engine.h"
+#include "DreamBox/Scene.h"
 
 namespace DreamBox
 {
@@ -90,63 +92,23 @@ namespace DreamBox
         return true;
     }
 
-    void Engine::Update()
+        void Engine::Update()
     {
         Uint64 currentTime = SDL_GetTicks();
-    
+
         m_deltaTime =
             static_cast<float>(
                 currentTime - m_lastFrameTime
             ) / 1000.0f;
-        
+
         m_lastFrameTime = currentTime;
-        
-        SDL_FPoint movement =
-            m_player.GetMovement(
+
+        if (m_currentScene)
+        {
+            m_currentScene->Update(
                 m_input,
                 m_deltaTime
             );
-        
-        // Horizontal movement
-        m_player.Move(
-            movement.x,
-            0.0f
-        );
-    
-        for (const Wall& wall : m_walls)
-        {
-            if (Collision::Intersects(
-                    m_player,
-                    wall))
-            {
-                m_player.Move(
-                    -movement.x,
-                    0.0f
-                );
-            
-                break;
-            }
-        }
-    
-        // Vertical movement
-        m_player.Move(
-            0.0f,
-            movement.y
-        );
-    
-        for (const Wall& wall : m_walls)
-        {
-            if (Collision::Intersects(
-                    m_player,
-                    wall))
-            {
-                m_player.Move(
-                    0.0f,
-                    -movement.y
-                );
-            
-                break;
-            }
         }
     }
 
@@ -167,10 +129,11 @@ namespace DreamBox
 
         SDL_RenderClear(m_renderer);
 
-        m_player.Render(m_renderer);
-
-        for (const Wall& wall : m_walls) {
-            wall.Render(m_renderer);
+        if (m_currentScene)
+        {
+            m_currentScene->Render(
+                m_renderer
+            );
         }
 
         SDL_RenderPresent(m_renderer);
@@ -179,18 +142,18 @@ namespace DreamBox
 
     void Engine::Shutdown()
     {
+        m_currentScene.reset();
+    
         if (m_renderer)
         {
             SDL_DestroyRenderer(m_renderer);
             m_renderer = nullptr;
         }
-
+    
         if (m_window)
         {
             SDL_DestroyWindow(m_window);
             m_window = nullptr;
         }
-
-        SDL_Log("DreamBox Engine shut down.");
     }
 }
