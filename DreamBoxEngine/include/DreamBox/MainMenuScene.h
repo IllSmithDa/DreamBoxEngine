@@ -18,26 +18,65 @@ namespace DreamBox
             SDL_Renderer* renderer
         ) const override;
 
+        void DrawButton(
+            SDL_Renderer* renderer,
+            const SDL_FRect& button,
+            bool selected
+        ) const;
     private:
+        enum class MenuOption{
+            Play,
+            Settings,
+            Quit,
+            Count
+        };
+        MenuOption m_selectedOption = MenuOption::Play;
         SDL_FRect m_playButton{
-            490.0f,
-            280.0f,
-            300.0f,
-            60.0f
+            490.0f, 280.0f, 300.0f, 60.0f
         };
-
+    
         SDL_FRect m_settingsButton{
-            490.0f,
-            360.0f,
-            300.0f,
-            60.0f
+            490.0f, 360.0f, 300.0f, 60.0f
+        };
+    
+        SDL_FRect m_quitButton{
+            490.0f, 440.0f, 300.0f, 60.0f
         };
 
-        SDL_FRect m_quitButton{
-            490.0f,
-            440.0f,
-            300.0f,
-            60.0f
-        };
+        void MainMenuScene::DrawButton(
+            SDL_Renderer* renderer,
+            const SDL_FRect& button,
+            bool selected
+        ) const
+        {
+            SDL_SetRenderDrawColor(
+                renderer,
+                80,
+                100,
+                130,
+                255
+            );
+        
+            SDL_RenderFillRect(
+                renderer,
+                &button
+            );
+        
+            if (selected)
+            {
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    255,
+                    255,
+                    255,
+                    255
+                );
+            
+                SDL_RenderRect(
+                    renderer,
+                    &button
+                );
+            }
+        }
     };
 }

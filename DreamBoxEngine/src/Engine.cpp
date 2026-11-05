@@ -57,7 +57,7 @@ namespace DreamBox
         return true;
     }
 
-        void Engine::Update()
+    void Engine::Update()
     {
         Uint64 currentTime = SDL_GetTicks();
 
@@ -68,6 +68,8 @@ namespace DreamBox
 
         m_lastFrameTime = currentTime;
 
+        m_input.Update();
+
         if (m_currentScene)
         {
             m_currentScene->Update(
@@ -76,7 +78,6 @@ namespace DreamBox
             );
         }
     }
-
     void Engine::Render()
     {
         if (!m_renderer)

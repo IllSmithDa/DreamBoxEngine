@@ -10,7 +10,6 @@ namespace DreamBox
         // Menu input will be added next.
     }
 
-
     void MainMenuScene::Render(
         SDL_Renderer* renderer
     ) const
@@ -20,46 +19,52 @@ namespace DreamBox
             return;
         }
 
-        // Play
-        SDL_SetRenderDrawColor(
+        DrawButton(
             renderer,
-            80,
-            180,
-            255,
-            255
+            m_playButton,
+            m_selectedOption == MenuOption::Play
         );
 
-        SDL_RenderFillRect(
+        DrawButton(
             renderer,
-            &m_playButton
+            m_settingsButton,
+            m_selectedOption == MenuOption::Settings
         );
 
-        // Settings
-        SDL_SetRenderDrawColor(
+        DrawButton(
             renderer,
-            120,
-            120,
-            140,
-            255
+            m_quitButton,
+            m_selectedOption == MenuOption::Quit
         );
+    }
 
-        SDL_RenderFillRect(
-            renderer,
-            &m_settingsButton
-        );
+    void MainMenuScene::Update(
+        const Input& input,
+        float deltaTime
+    )
+    {
+        int selected =
+            static_cast<int>(m_selectedOption);
 
-        // Quit
-        SDL_SetRenderDrawColor(
-            renderer,
-            180,
-            80,
-            80,
-            255
-        );
+        const int optionCount =
+            static_cast<int>(MenuOption::Count);
 
-        SDL_RenderFillRect(
-            renderer,
-            &m_quitButton
-        );
+        if (input.IsKeyPressed(SDL_SCANCODE_DOWN) ||
+            input.IsKeyPressed(SDL_SCANCODE_S))
+        {
+            selected =
+                (selected + 1) % optionCount;
+        }
+
+        if (input.IsKeyPressed(SDL_SCANCODE_UP) ||
+            input.IsKeyPressed(SDL_SCANCODE_W))
+        {
+            selected =
+                (selected - 1 + optionCount)
+                % optionCount;
+        }
+
+        m_selectedOption =
+            static_cast<MenuOption>(selected);
     }
 }
