@@ -8,7 +8,7 @@
 #include <vector>
 #include <memory>
 #include "DreamBox/Scene.h"
-
+#include "DreamBox/GameScene.h"
 
 namespace DreamBox
 {
@@ -17,7 +17,7 @@ namespace DreamBox
     public:
         Engine() = default;
         ~Engine();
-
+        
         // Prevent accidentally copying the engine.
         Engine(const Engine&) = delete;
         Engine& operator=(const Engine&) = delete;
