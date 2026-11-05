@@ -47,7 +47,7 @@ add_executable(
     src/Wall.cpp
     src/Collision.cpp
     src/GameScene.cpp
-
+    src/MainMenuScene.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -57,6 +57,7 @@ add_executable(
     include/DreamBox/Collision.h
     include/DreamBox/Scene.h
     include/DreamBox/GameScene.h
+    include/DreamBox/MainMenuScene.h
 )
 
 target_include_directories(
