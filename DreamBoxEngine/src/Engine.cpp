@@ -1,4 +1,5 @@
 #include <memory>
+#include <SDL3_ttf/SDL_ttf.h>
 #include "DreamBox/Engine.h"
 #include "DreamBox/Scene.h"
 #include "DreamBox/MainMenuScene.h"
@@ -26,6 +27,16 @@ namespace DreamBox
                 &m_window,
                 &m_renderer))
         {
+            return false;
+        }
+
+        if (!TTF_Init())
+        {
+            SDL_Log(
+                "Failed to initialize SDL_ttf: %s",
+                SDL_GetError()
+            );
+        
             return false;
         }
 
@@ -131,6 +142,8 @@ namespace DreamBox
     {
         m_currentScene.reset();
 
+        TTF_Quit();
+        
         if (m_renderer)
         {
             SDL_DestroyRenderer(m_renderer);

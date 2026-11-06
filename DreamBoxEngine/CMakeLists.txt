@@ -22,6 +22,19 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 include(FetchContent)
 
+# Fetch SDL text library 
+
+set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    SDL3_ttf
+    GIT_REPOSITORY https://github.com/libsdl-org/SDL_ttf.git
+    GIT_TAG release-3.2.2
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(SDL3_ttf)
+
 FetchContent_Declare(
     SDL3
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
@@ -70,6 +83,7 @@ target_link_libraries(
     DreamBoxEngine
     PRIVATE
     SDL3::SDL3
+    SDL3_ttf::SDL3_ttf
 )
 
 
