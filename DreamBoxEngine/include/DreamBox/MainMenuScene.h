@@ -9,7 +9,7 @@ namespace DreamBox
     public:
         MainMenuScene() = default;
 
-        void Update(
+        SceneRequest Update(
             const Input& input,
             float deltaTime
         ) override;

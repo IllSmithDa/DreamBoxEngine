@@ -57,26 +57,49 @@ namespace DreamBox
         return true;
     }
 
-    void Engine::Update()
+    bool Engine::Update()
     {
-        Uint64 currentTime = SDL_GetTicks();
-
+        Uint64 currentTime =
+            SDL_GetTicks();
+    
         m_deltaTime =
             static_cast<float>(
                 currentTime - m_lastFrameTime
             ) / 1000.0f;
-
-        m_lastFrameTime = currentTime;
-
+        
+        m_lastFrameTime =
+            currentTime;
+        
         m_input.Update();
-
-        if (m_currentScene)
+        
+        if (!m_currentScene)
         {
+            return true;
+        }
+    
+        SceneRequest request =
             m_currentScene->Update(
                 m_input,
                 m_deltaTime
             );
+        
+        switch (request)
+        {
+        case SceneRequest::StartGame:
+            ChangeScene(
+                std::make_unique<GameScene>()
+            );
+            break;
+        
+        case SceneRequest::Quit:
+            return false;
+        
+        case SceneRequest::None:
+        default:
+            break;
         }
+    
+        return true;
     }
     void Engine::Render()
     {

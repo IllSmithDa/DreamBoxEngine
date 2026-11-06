@@ -6,12 +6,19 @@
 
 namespace DreamBox
 {
+    enum class SceneRequest
+    {
+        None,
+        StartGame,
+        Quit
+    };
+
     class Scene
     {
     public:
         virtual ~Scene() = default;
 
-        virtual void Update(
+        virtual SceneRequest Update(
             const Input& input,
             float deltaTime
         ) = 0;

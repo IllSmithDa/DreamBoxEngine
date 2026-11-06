@@ -26,7 +26,7 @@ namespace DreamBox
 
         bool HandleEvent(const SDL_Event& event);
 
-        void Update();
+        bool Update();
         void Render();
 
         void Shutdown();

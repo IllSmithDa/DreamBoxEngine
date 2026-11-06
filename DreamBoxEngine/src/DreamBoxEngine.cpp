@@ -53,9 +53,15 @@ SDL_AppResult SDL_AppEvent(
 SDL_AppResult SDL_AppIterate(void* appstate)
 {
     auto* engine =
-        static_cast<DreamBox::Engine*>(appstate);
+        static_cast<DreamBox::Engine*>(
+            appstate
+        );
 
-    engine->Update();
+    if (!engine->Update())
+    {
+        return SDL_APP_SUCCESS;
+    }
+
     engine->Render();
 
     return SDL_APP_CONTINUE;

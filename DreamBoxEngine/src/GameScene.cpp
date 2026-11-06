@@ -51,7 +51,7 @@ namespace DreamBox
     }
 
 
-    void GameScene::Update(
+    SceneRequest GameScene::Update(
         const Input& input,
         float deltaTime
     )
@@ -61,13 +61,12 @@ namespace DreamBox
                 input,
                 deltaTime
             );
-
-        // Try horizontal movement.
+        
         m_player.Move(
             movement.x,
             0.0f
         );
-
+    
         if (PlayerCollidesWithWall())
         {
             m_player.Move(
@@ -75,13 +74,12 @@ namespace DreamBox
                 0.0f
             );
         }
-
-        // Try vertical movement.
+    
         m_player.Move(
             0.0f,
             movement.y
         );
-
+    
         if (PlayerCollidesWithWall())
         {
             m_player.Move(
@@ -89,6 +87,8 @@ namespace DreamBox
                 -movement.y
             );
         }
+    
+        return SceneRequest::None;
     }
 
 
