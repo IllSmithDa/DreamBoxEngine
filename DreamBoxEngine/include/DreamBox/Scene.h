@@ -10,6 +10,7 @@ namespace DreamBox
     {
         None,
         StartGame,
+        MainMenu,
         Quit
     };
 

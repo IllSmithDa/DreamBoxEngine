@@ -46,14 +46,6 @@ namespace DreamBox
             return false;
         }
 
-        if (event.type == SDL_EVENT_KEY_DOWN)
-        {
-            if (event.key.scancode == SDL_SCANCODE_ESCAPE)
-            {
-                return false;
-            }
-        }
-
         return true;
     }
 
@@ -85,6 +77,12 @@ namespace DreamBox
         
         switch (request)
         {
+
+        case SceneRequest::MainMenu:
+            ChangeScene(
+                std::make_unique<MainMenuScene>()
+            );
+            break;
         case SceneRequest::StartGame:
             ChangeScene(
                 std::make_unique<GameScene>()

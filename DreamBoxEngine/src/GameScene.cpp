@@ -56,6 +56,11 @@ namespace DreamBox
         float deltaTime
     )
     {
+        if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
+        {
+            return SceneRequest::MainMenu;
+        }
+
         SDL_FPoint movement =
             m_player.GetMovement(
                 input,
