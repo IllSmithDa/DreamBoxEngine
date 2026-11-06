@@ -12,7 +12,7 @@ namespace DreamBox
     public:
         GameScene();
 
-        void Update(
+        SceneRequest Update(
             const Input& input,
             float deltaTime
         ) override;
