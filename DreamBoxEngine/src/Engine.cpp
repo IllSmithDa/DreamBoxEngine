@@ -3,6 +3,8 @@
 #include "DreamBox/Engine.h"
 #include "DreamBox/Scene.h"
 #include "DreamBox/MainMenuScene.h"
+#include "DreamBox/GameScene.h"
+
 
 namespace DreamBox
 {
@@ -43,7 +45,7 @@ namespace DreamBox
         m_lastFrameTime = SDL_GetTicks();
 
         ChangeScene(
-            std::make_unique<MainMenuScene>()
+            std::make_unique<MainMenuScene>(m_renderer)
         );
 
         return true;
@@ -91,7 +93,7 @@ namespace DreamBox
 
         case SceneRequest::MainMenu:
             ChangeScene(
-                std::make_unique<MainMenuScene>()
+                std::make_unique<MainMenuScene>(m_renderer)
             );
             break;
         case SceneRequest::StartGame:
