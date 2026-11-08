@@ -90,6 +90,22 @@ target_link_libraries(
     SDL3_ttf::SDL3_ttf
 )
 
+if(WIN32)
+    add_custom_command(
+        TARGET DreamBoxEngine
+        POST_BUILD
+
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:SDL3-shared>
+            $<TARGET_FILE_DIR:DreamBoxEngine>
+
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:SDL3_ttf-shared>
+            $<TARGET_FILE_DIR:DreamBoxEngine>
+
+        VERBATIM
+    )
+endif()
 
 # -------------------------
 # Collision Tests
@@ -112,17 +128,6 @@ target_link_libraries(
     CollisionTests
     PRIVATE
     SDL3::SDL3
-)
-
-# added assets
-
-add_custom_command(
-    TARGET DreamBoxEngine
-    POST_BUILD
-
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
-        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets"
 )
 
 add_test(
