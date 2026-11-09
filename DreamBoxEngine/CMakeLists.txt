@@ -156,8 +156,8 @@ add_custom_command(
     POST_BUILD
 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
-        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets"
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/Montserrat"
+        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets/Montserrat"
 
     VERBATIM
 )
