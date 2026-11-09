@@ -143,10 +143,10 @@ endif()
 # -------------------------
 
 if(NOT EXISTS
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/Montserrat-Regular.ttf"
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/Montserrat/Montserrat-Regular.ttf"
 )
     message(FATAL_ERROR
-        "Montserrat-Regular.ttf was not found in assets/fonts"
+        "Montserrat-Regular.ttf was not found"
     )
 endif()
 
