@@ -24,6 +24,23 @@ jobs:
       - name: Build DreamBox Engine
         run: cmake --build build --config Release --parallel
 
+      # Verify that CMake actually copied the font.
+      - name: Verify Font
+        shell: pwsh
+        run: |
+          $font = Get-ChildItem build -Recurse -Filter Montserrat-Regular.ttf |
+            Select-Object -First 1
+
+          if (-not $font) {
+            Write-Host "Montserrat-Regular.ttf was not found."
+            Write-Host "Build directory contents:"
+            Get-ChildItem build -Recurse | Select-Object FullName
+            throw "Font was not copied into the build output"
+          }
+
+          Write-Host "Font found:"
+          Write-Host $font.FullName
+
       - name: Package Executable
         shell: pwsh
         run: |
@@ -46,6 +63,24 @@ jobs:
           }
 
           Copy-Item $dll.FullName dist/
+
+          # Copy the assets folder located beside DreamBoxEngine.exe.
+          $assets = Join-Path $exe.DirectoryName "assets"
+
+          if (-not (Test-Path $assets)) {
+            throw "Assets folder not found beside DreamBoxEngine.exe"
+          }
+
+          Copy-Item `
+            $assets `
+            dist/assets `
+            -Recurse
+
+      - name: Show Package Contents
+        shell: pwsh
+        run: |
+          Write-Host "Final DreamBox package:"
+          Get-ChildItem dist -Recurse | Select-Object FullName
 
       - name: Upload Build
         uses: actions/upload-artifact@v4
