@@ -150,18 +150,20 @@ if(NOT EXISTS
     )
 endif()
 
-# Copy fonts and other assets beside the executable.
+# Copy Montserrat font assets beside the executable.
 add_custom_command(
     TARGET DreamBoxEngine
     POST_BUILD
 
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets/fonts/Montserrat"
+
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/assets/Montserrat"
-        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets/Montserrat"
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/Montserrat"
+        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets/fonts/Montserrat"
 
     VERBATIM
 )
-
 
 # -------------------------
 # Collision Tests
