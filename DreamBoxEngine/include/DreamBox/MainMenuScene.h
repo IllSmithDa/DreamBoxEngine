@@ -49,12 +49,6 @@ namespace DreamBox
         MenuOption m_selectedOption =
             MenuOption::Play;
 
-        TTF_Font* m_font = nullptr;
-
-        SDL_Texture* m_playText = nullptr;
-        SDL_Texture* m_settingsText = nullptr;
-        SDL_Texture* m_quitText = nullptr;
-
         SDL_FRect m_playButton{
             490.0f, 280.0f, 300.0f, 60.0f
         };

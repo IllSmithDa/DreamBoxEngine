@@ -191,7 +191,7 @@ namespace DreamBox
         return SceneRequest::None;
     }
 
-    // draw button with font usint the Montserrat font 
+    // Draw button using the Montserrat font.
     void MainMenuScene::DrawButton(
         SDL_Renderer* renderer,
         const SDL_FRect& button,
@@ -199,102 +199,6 @@ namespace DreamBox
         bool selected
     ) const
     {
-        SDL_SetRenderDrawColor(
-            renderer,
-            80,
-            100,
-            130,
-            255
-        );
-
-        SDL_RenderFillRect(
-            renderer,
-            &button
-        );
-
-        if (selected)
-        {
-            SDL_SetRenderDrawColor(
-                renderer,
-                255,
-                255,
-                255,
-                255
-            );
-
-            SDL_RenderRect(
-                renderer,
-                &button
-            );
-        }
-
-        if (!textTexture)
-        {
-            return;
-        }
-
-        float textWidth = 0.0f;
-        float textHeight = 0.0f;
-
-        SDL_GetTextureSize(
-            textTexture,
-            &textWidth,
-            &textHeight
-        );
-
-        SDL_FRect textRect{
-            button.x +
-                (button.w - textWidth) / 2.0f,
-
-            button.y +
-                (button.h - textHeight) / 2.0f,
-
-            textWidth,
-            textHeight
-        };
-
-        SDL_RenderTexture(
-            renderer,
-            textTexture,
-            nullptr,
-            &textRect
-        );
-    }
-    
-    void MainMenuScene::Render(
-        SDL_Renderer* renderer
-    ) const
-    {
-        if (!renderer)
-        {
-            return;
-        }
-        if (m_titleText)
-        {
-            float titleWidth = 0.0f;
-            float titleHeight = 0.0f;
-        
-            SDL_GetTextureSize(
-                m_titleText,
-                &titleWidth,
-                &titleHeight
-            );
-        
-            SDL_FRect titleRect{
-                640.0f - titleWidth / 2.0f,
-                175.0f,
-                titleWidth,
-                titleHeight
-            };
-        
-            SDL_RenderTexture(
-                renderer,
-                m_titleText,
-                nullptr,
-                &titleRect
-            );
-        }
-
         if (selected)
         {
             SDL_SetRenderDrawColor(
@@ -315,12 +219,12 @@ namespace DreamBox
                 255
             );
         }
-
+    
         SDL_RenderFillRect(
             renderer,
             &button
         );
-
+    
         if (selected)
         {
             SDL_SetRenderDrawColor(
@@ -336,6 +240,71 @@ namespace DreamBox
                 &button
             );
         }
+    
+        if (!textTexture)
+        {
+            return;
+        }
+    
+        float textWidth = 0.0f;
+        float textHeight = 0.0f;
+    
+        SDL_GetTextureSize(
+            textTexture,
+            &textWidth,
+            &textHeight
+        );
+    
+        SDL_FRect textRect{
+            button.x + (button.w - textWidth) / 2.0f,
+            button.y + (button.h - textHeight) / 2.0f,
+            textWidth,
+            textHeight
+        };
+    
+        SDL_RenderTexture(
+            renderer,
+            textTexture,
+            nullptr,
+            &textRect
+        );
+    }
+    
+    void MainMenuScene::Render(
+        SDL_Renderer* renderer
+    ) const
+    {
+        if (!renderer)
+        {
+            return;
+        }
+
+        if (m_titleText)
+        {
+            float titleWidth = 0.0f;
+            float titleHeight = 0.0f;
+
+            SDL_GetTextureSize(
+                m_titleText,
+                &titleWidth,
+                &titleHeight
+            );
+
+            SDL_FRect titleRect{
+                640.0f - titleWidth / 2.0f,
+                175.0f,
+                titleWidth,
+                titleHeight
+            };
+
+            SDL_RenderTexture(
+                renderer,
+                m_titleText,
+                nullptr,
+                &titleRect
+            );
+        }
+
         DrawButton(
             renderer,
             m_playButton,
