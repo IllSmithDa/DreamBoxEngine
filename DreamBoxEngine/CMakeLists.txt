@@ -22,11 +22,16 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 include(FetchContent)
 
-# Fetch SDL text library 
 
-set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
+# -------------------------
+# SDL3
+# -------------------------
 
-# Fetch SDL 
+# NEW:
+# Explicitly keep SDL3 as a shared library.
+set(SDL_SHARED ON CACHE BOOL "" FORCE)
+set(SDL_STATIC OFF CACHE BOOL "" FORCE)
+
 FetchContent_Declare(
     SDL3
     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
@@ -36,7 +41,21 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(SDL3)
 
-# Fetch SDL Font second 
+
+# -------------------------
+# SDL3_ttf
+# -------------------------
+
+# Use SDL_ttf's included dependencies.
+set(SDLTTF_VENDORED ON CACHE BOOL "" FORCE)
+
+# Optional: don't build SDL_ttf sample applications.
+set(SDLTTF_SAMPLES OFF CACHE BOOL "" FORCE)
+
+# NEW:
+# Build SDL3_ttf statically.
+# This means DreamBoxEngine.exe will NOT require SDL3_ttf.dll.
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
 FetchContent_Declare(
     SDL3_ttf
@@ -45,13 +64,17 @@ FetchContent_Declare(
     GIT_SUBMODULES_RECURSE TRUE
     GIT_PROGRESS TRUE
 )
+
 FetchContent_MakeAvailable(SDL3_ttf)
+
+# NEW:
+# Restore the normal shared-library setting for anything added later.
+set(BUILD_SHARED_LIBS ON CACHE BOOL "" FORCE)
 
 
 # -------------------------
 # DreamBox Engine
 # -------------------------
-
 
 add_executable(
     DreamBoxEngine
@@ -86,26 +109,51 @@ target_include_directories(
 target_link_libraries(
     DreamBoxEngine
     PRIVATE
+
+    # SDL3 remains shared.
     SDL3::SDL3
+
+    # SDL3_ttf::SDL3_ttf automatically points at
+    # the static SDL_ttf target we created above.
     SDL3_ttf::SDL3_ttf
 )
+
+
+# -------------------------
+# Windows Runtime DLLs
+# -------------------------
 
 if(WIN32)
     add_custom_command(
         TARGET DreamBoxEngine
         POST_BUILD
 
+        # SDL3 is still shared, so copy SDL3.dll.
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:SDL3-shared>
-            $<TARGET_FILE_DIR:DreamBoxEngine>
-
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:SDL3_ttf-shared>
+            $<TARGET_FILE:SDL3::SDL3-shared>
             $<TARGET_FILE_DIR:DreamBoxEngine>
 
         VERBATIM
     )
 endif()
+
+
+# -------------------------
+# Assets
+# -------------------------
+
+# Copy fonts and other assets beside the executable.
+add_custom_command(
+    TARGET DreamBoxEngine
+    POST_BUILD
+
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets"
+
+    VERBATIM
+)
+
 
 # -------------------------
 # Collision Tests
