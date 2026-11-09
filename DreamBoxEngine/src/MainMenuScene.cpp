@@ -40,22 +40,42 @@ namespace DreamBox
         
             return;
         }
+
+        // load bold font with size 42
+        std::string boldFontPath =
+            std::string(basePath) +
+            "assets/fonts/Montserrat/Montserrat-Bold.ttf";
+
+        m_titleFont = TTF_OpenFont(
+            boldFontPath.c_str(),
+            42.0f
+        );
     
+        m_titleText =
+            CreateTextTexture(
+                renderer,
+                m_titleFont,
+                "DREAMBOX ENGINE"
+            );
+        
         m_playText =
             CreateTextTexture(
                 renderer,
+                m_font,
                 "PLAY"
             );
         
         m_settingsText =
             CreateTextTexture(
                 renderer,
+                m_font,
                 "SETTINGS"
             );
         
         m_quitText =
             CreateTextTexture(
                 renderer,
+                m_font,
                 "QUIT"
             );
     }
@@ -66,7 +86,13 @@ namespace DreamBox
         SDL_DestroyTexture(m_playText);
         SDL_DestroyTexture(m_settingsText);
         SDL_DestroyTexture(m_quitText);
+        SDL_DestroyTexture(m_titleText);
 
+        if (m_titleFont)
+        {
+            TTF_CloseFont(m_titleFont);
+            m_titleFont = nullptr;
+        }
         if (m_font)
         {
             TTF_CloseFont(m_font);
@@ -75,8 +101,9 @@ namespace DreamBox
     }
 
     // create the textures for the scene
-    SDL_Texture* DreamBox::MainMenuScene::CreateTextTexture(
+    SDL_Texture* MainMenuScene::CreateTextTexture(
         SDL_Renderer* renderer,
+        TTF_Font* font,
         const char* text
     )
     {
@@ -86,33 +113,28 @@ namespace DreamBox
             255,
             255
         };
-
+    
         SDL_Surface* surface =
             TTF_RenderText_Blended(
-                m_font,
+                font,
                 text,
                 0,
                 color
             );
-
+        
         if (!surface)
         {
-            SDL_Log(
-                "Unable to render text: %s",
-                SDL_GetError()
-            );
-
             return nullptr;
         }
-
+    
         SDL_Texture* texture =
             SDL_CreateTextureFromSurface(
                 renderer,
                 surface
             );
-
+        
         SDL_DestroySurface(surface);
-
+        
         return texture;
     }
 
@@ -247,7 +269,73 @@ namespace DreamBox
         {
             return;
         }
+        if (m_titleText)
+        {
+            float titleWidth = 0.0f;
+            float titleHeight = 0.0f;
+        
+            SDL_GetTextureSize(
+                m_titleText,
+                &titleWidth,
+                &titleHeight
+            );
+        
+            SDL_FRect titleRect{
+                640.0f - titleWidth / 2.0f,
+                175.0f,
+                titleWidth,
+                titleHeight
+            };
+        
+            SDL_RenderTexture(
+                renderer,
+                m_titleText,
+                nullptr,
+                &titleRect
+            );
+        }
 
+        if (selected)
+        {
+            SDL_SetRenderDrawColor(
+                renderer,
+                95,
+                130,
+                180,
+                255
+            );
+        }
+        else
+        {
+            SDL_SetRenderDrawColor(
+                renderer,
+                55,
+                65,
+                85,
+                255
+            );
+        }
+
+        SDL_RenderFillRect(
+            renderer,
+            &button
+        );
+
+        if (selected)
+        {
+            SDL_SetRenderDrawColor(
+                renderer,
+                230,
+                235,
+                245,
+                255
+            );
+        
+            SDL_RenderRect(
+                renderer,
+                &button
+            );
+        }
         DrawButton(
             renderer,
             m_playButton,

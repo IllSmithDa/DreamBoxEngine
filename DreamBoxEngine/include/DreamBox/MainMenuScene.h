@@ -35,6 +35,7 @@ namespace DreamBox
 
         SDL_Texture* CreateTextTexture(
             SDL_Renderer* renderer,
+            TTF_Font* font,
             const char* text
         );
 
@@ -65,5 +66,15 @@ namespace DreamBox
         SDL_FRect m_quitButton{
             490.0f, 440.0f, 300.0f, 60.0f
         };
+
+        // font related variables 
+        TTF_Font* m_font = nullptr;
+        TTF_Font* m_titleFont = nullptr;
+
+        SDL_Texture* m_titleText = nullptr;
+
+        SDL_Texture* m_playText = nullptr;
+        SDL_Texture* m_settingsText = nullptr;
+        SDL_Texture* m_quitText = nullptr;
     };
 }
