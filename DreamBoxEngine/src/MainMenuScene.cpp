@@ -24,7 +24,7 @@ namespace DreamBox
     
         std::string fontPath =
             std::string(basePath) +
-            "assets/fonts/Montserrat-Regular.ttf";
+            "assets/fonts/Montserrat/Montserrat-Regular.ttf";
     
         m_font = TTF_OpenFont(
             fontPath.c_str(),
