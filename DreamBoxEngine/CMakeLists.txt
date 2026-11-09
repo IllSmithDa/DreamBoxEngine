@@ -142,6 +142,14 @@ endif()
 # Assets
 # -------------------------
 
+if(NOT EXISTS
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/Montserrat-Regular.ttf"
+)
+    message(FATAL_ERROR
+        "Montserrat-Regular.ttf was not found in assets/fonts"
+    )
+endif()
+
 # Copy fonts and other assets beside the executable.
 add_custom_command(
     TARGET DreamBoxEngine
