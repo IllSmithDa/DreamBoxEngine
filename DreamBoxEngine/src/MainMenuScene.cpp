@@ -50,7 +50,7 @@ namespace DreamBox
             boldFontPath.c_str(),
             42.0f
         );
-    
+        
         m_titleText =
             CreateTextTexture(
                 renderer,
@@ -78,6 +78,15 @@ namespace DreamBox
                 m_font,
                 "QUIT"
             );
+
+        if (m_footerFont)
+        {
+            m_footerText = CreateTextTexture(
+                renderer,
+                m_footerFont,
+                "UP/DOWN or W/S - Navigate     ENTER - Select"
+            );
+        }
     }
 
     // destructor
@@ -97,6 +106,14 @@ namespace DreamBox
         {
             TTF_CloseFont(m_font);
             m_font = nullptr;
+        }
+
+        SDL_DestroyTexture(m_footerText);
+
+        if (m_footerFont)
+        {
+            TTF_CloseFont(m_footerFont);
+            m_footerFont = nullptr;
         }
     }
 
@@ -219,12 +236,12 @@ namespace DreamBox
                 255
             );
         }
-    
+
         SDL_RenderFillRect(
             renderer,
             &button
         );
-    
+
         if (selected)
         {
             SDL_SetRenderDrawColor(
@@ -234,34 +251,34 @@ namespace DreamBox
                 245,
                 255
             );
-        
+
             SDL_RenderRect(
                 renderer,
                 &button
             );
         }
-    
+
         if (!textTexture)
         {
             return;
         }
-    
+
         float textWidth = 0.0f;
         float textHeight = 0.0f;
-    
+
         SDL_GetTextureSize(
             textTexture,
             &textWidth,
             &textHeight
         );
-    
+
         SDL_FRect textRect{
             button.x + (button.w - textWidth) / 2.0f,
             button.y + (button.h - textHeight) / 2.0f,
             textWidth,
             textHeight
         };
-    
+
         SDL_RenderTexture(
             renderer,
             textTexture,
@@ -283,28 +300,49 @@ namespace DreamBox
         {
             float titleWidth = 0.0f;
             float titleHeight = 0.0f;
-
+        
             SDL_GetTextureSize(
                 m_titleText,
                 &titleWidth,
                 &titleHeight
             );
-
+        
             SDL_FRect titleRect{
                 640.0f - titleWidth / 2.0f,
-                175.0f,
+                150.0f,
                 titleWidth,
                 titleHeight
             };
-
+        
             SDL_RenderTexture(
                 renderer,
                 m_titleText,
                 nullptr,
                 &titleRect
             );
+        
+            // Decorative underline
+            SDL_FRect underline{
+                590.0f,
+                titleRect.y + titleHeight + 15.0f,
+                100.0f,
+                3.0f
+            };
+        
+            SDL_SetRenderDrawColor(
+                renderer,
+                95,
+                150,
+                215,
+                255
+            );
+        
+            SDL_RenderFillRect(
+                renderer,
+                &underline
+            );
         }
-
+        
         DrawButton(
             renderer,
             m_playButton,
@@ -325,6 +363,32 @@ namespace DreamBox
             m_quitText,
             m_selectedOption == MenuOption::Quit
         );
+
+        if (m_footerText)
+        {
+            float footerWidth = 0.0f;
+            float footerHeight = 0.0f;
+        
+            SDL_GetTextureSize(
+                m_footerText,
+                &footerWidth,
+                &footerHeight
+            );
+        
+            SDL_FRect footerRect{
+                640.0f - footerWidth / 2.0f,
+                650.0f,
+                footerWidth,
+                footerHeight
+            };
+        
+            SDL_RenderTexture(
+                renderer,
+                m_footerText,
+                nullptr,
+                &footerRect
+            );
+        }
     }
 
 }

@@ -70,5 +70,9 @@ namespace DreamBox
         SDL_Texture* m_playText = nullptr;
         SDL_Texture* m_settingsText = nullptr;
         SDL_Texture* m_quitText = nullptr;
+
+        // footer 
+        TTF_Font* m_footerFont = nullptr;
+        SDL_Texture* m_footerText = nullptr;
     };
 }
