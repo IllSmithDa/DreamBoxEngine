@@ -103,7 +103,7 @@ add_executable(
     include/DreamBox/MainMenuScene.h
     include/DreamBox/Text.h
     include/DreamBox/SettingsScene.h
-    incldue/DreamBox/Button.h
+    include/DreamBox/Button.h
 )   
 
 target_include_directories(
