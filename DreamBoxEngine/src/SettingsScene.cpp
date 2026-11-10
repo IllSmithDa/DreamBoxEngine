@@ -46,8 +46,9 @@ namespace DreamBox
             "SETTINGS"
         );
 
-        m_fullscreenText = std::make_unique<Text>(
+        m_fullscreenButton = std::make_unique<Button>(
             renderer,
+            SDL_FRect{490.0f, 280.0f, 300.0f, 60.0f},
             regularFont,
             24.0f,
             settings.fullscreen
@@ -55,8 +56,9 @@ namespace DreamBox
                 : "FULLSCREEN: OFF"
         );
 
-        m_vsyncText = std::make_unique<Text>(
+        m_vsyncButton = std::make_unique<Button>(
             renderer,
+            SDL_FRect{490.0f, 360.0f, 300.0f, 60.0f},
             regularFont,
             24.0f,
             settings.vsync
@@ -64,13 +66,13 @@ namespace DreamBox
                 : "VSYNC: OFF"
         );
 
-        m_backText = std::make_unique<Text>(
+        m_backButton = std::make_unique<Button>(
             renderer,
+            SDL_FRect{490.0f, 440.0f, 300.0f, 60.0f},
             regularFont,
             28.0f,
             "BACK"
         );
-
         m_footerText = std::make_unique<Text>(
             renderer,
             regularFont,
@@ -135,54 +137,6 @@ namespace DreamBox
         return SceneRequest::None;
     }
 
-    void SettingsScene::DrawButton(
-        SDL_Renderer* renderer,
-        const SDL_FRect& bounds,
-        const Text* label,
-        bool selected
-    ) const
-    {
-        if (selected)
-        {
-            SDL_SetRenderDrawColor(
-                renderer, 95, 130, 180, 255
-            );
-        }
-        else
-        {
-            SDL_SetRenderDrawColor(
-                renderer, 55, 65, 85, 255
-            );
-        }
-
-        SDL_RenderFillRect(renderer, &bounds);
-
-        if (selected)
-        {
-            SDL_SetRenderDrawColor(
-                renderer, 230, 235, 245, 255
-            );
-
-            SDL_RenderRect(renderer, &bounds);
-        }
-
-        if (label)
-        {
-            const float centerX =
-                bounds.x + bounds.w / 2.0f;
-
-            const float textY =
-                bounds.y +
-                (bounds.h - label->GetHeight()) / 2.0f;
-
-            label->RenderCentered(
-                renderer,
-                centerX,
-                textY
-            );
-        }
-    }
-
     void SettingsScene::Render(
         SDL_Renderer* renderer
     ) const
@@ -213,26 +167,29 @@ namespace DreamBox
             SDL_RenderFillRect(renderer, &underline);
         }
 
-        DrawButton(
-            renderer,
-            m_fullscreenButton,
-            m_fullscreenText.get(),
-            m_selectedOption == MenuOption::Fullscreen
-        );
+        if (m_fullscreenButton)
+        {
+            m_fullscreenButton->Render(
+                renderer,
+                m_selectedOption == MenuOption::Fullscreen
+            );
+        }
 
-        DrawButton(
-            renderer,
-            m_vsyncButton,
-            m_vsyncText.get(),
-            m_selectedOption == MenuOption::VSync
-        );
+        if (m_vsyncButton)
+        {
+            m_vsyncButton->Render(
+                renderer,
+                m_selectedOption == MenuOption::VSync
+            );
+        }
 
-        DrawButton(
-            renderer,
-            m_backButton,
-            m_backText.get(),
-            m_selectedOption == MenuOption::Back
-        );
+        if (m_backButton)
+        {
+            m_backButton->Render(
+                renderer,
+                m_selectedOption == MenuOption::Back
+            );
+        }
 
         if (m_footerText)
         {

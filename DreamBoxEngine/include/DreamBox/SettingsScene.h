@@ -4,7 +4,7 @@
 #include "DreamBox/Scene.h"
 #include "DreamBox/Text.h"
 #include "DreamBox/EngineSettings.h"
-
+#include "DreamBox/Button.h"
 #include <memory>
 
 namespace DreamBox
@@ -49,9 +49,9 @@ namespace DreamBox
             MenuOption::Fullscreen;
 
         std::unique_ptr<Text> m_titleText;
-        std::unique_ptr<Text> m_fullscreenText;
-        std::unique_ptr<Text> m_vsyncText;
-        std::unique_ptr<Text> m_backText;
+        std::unique_ptr<Button> m_fullscreenButton;
+        std::unique_ptr<Button> m_vsyncButton;
+        std::unique_ptr<Button> m_backButton;
         std::unique_ptr<Text> m_footerText;
 
         SDL_FRect m_fullscreenButton{

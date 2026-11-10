@@ -3,8 +3,9 @@
 
 #include "DreamBox/Text.h"
 #include "DreamBox/Scene.h"
-
+#include "DreamBox/Button.h"
 #include <memory>
+
 
 namespace DreamBox
 {
@@ -45,15 +46,15 @@ namespace DreamBox
         MenuOption m_selectedOption =
             MenuOption::Play;
 
-        SDL_FRect m_playButton{
+        std::unique_ptr<Button> m_playButton{
             490.0f, 280.0f, 300.0f, 60.0f
         };
 
-        SDL_FRect m_settingsButton{
+        std::unique_ptr<Button> m_settingsButton{
             490.0f, 360.0f, 300.0f, 60.0f
         };
 
-        SDL_FRect m_quitButton{
+        std::unique_ptr<Button> m_quitButton{
             490.0f, 440.0f, 300.0f, 60.0f
         };
 

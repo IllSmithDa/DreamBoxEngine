@@ -9,59 +9,56 @@ namespace DreamBox
         SDL_Renderer* renderer
     )
     {
-            const char* basePath = SDL_GetBasePath();
-
-            if (!basePath)
-            {
-                SDL_Log(
-                    "Unable to get application path: %s",
-                    SDL_GetError()
-                );
-                return;
-            }
-
-            std::string regularFontPath =
-                std::string(basePath) +
-                "assets/fonts/Montserrat/Montserrat-Regular.ttf";
-
-            std::string boldFontPath =
-                std::string(basePath) +
-                "assets/fonts/Montserrat/Montserrat-Bold.ttf";
-
-            m_titleText = std::make_unique<Text>(
-                renderer,
-                boldFontPath,
-                42.0f,
-                "DREAMBOX ENGINE"
+        const char* basePath = SDL_GetBasePath();
+        if (!basePath)
+        {
+            SDL_Log(
+                "Unable to get application path: %s",
+                SDL_GetError()
             );
-
-            m_playText = std::make_unique<Text>(
-                renderer,
-                regularFontPath,
-                28.0f,
-                "PLAY"
-            );
-
-            m_settingsText = std::make_unique<Text>(
-                renderer,
-                regularFontPath,
-                28.0f,
-                "SETTINGS"
-            );
-
-            m_quitText = std::make_unique<Text>(
-                renderer,
-                regularFontPath,
-                28.0f,
-                "QUIT"
-            );
-
-            m_footerText = std::make_unique<Text>(
-                renderer,
-                regularFontPath,
-                18.0f,
-                "UP/DOWN or W/S - Navigate     ENTER - Select"
-            );
+            return;
+        }
+        std::string regularFontPath =
+            std::string(basePath) +
+            "assets/fonts/Montserrat/Montserrat-Regular.ttf";
+        std::string boldFontPath =
+            std::string(basePath) +
+            "assets/fonts/Montserrat/Montserrat-Bold.ttf";
+        m_titleText = std::make_unique<Text>(
+            renderer,
+            boldFontPath,
+            42.0f,
+            "DREAMBOX ENGINE"
+        );
+        m_footerText = std::make_unique<Text>(
+            renderer,
+            regularFontPath,
+            18.0f,
+            "UP/DOWN or W/S - Navigate     ENTER - Select"
+        );
+        m_playButton = std::make_unique<Button>(
+            renderer,
+            SDL_FRect{490.0f, 280.0f, 300.0f, 60.0f},
+            regularFontPath,
+            28.0f,
+            "PLAY"
+        );
+        
+        m_settingsButton = std::make_unique<Button>(
+            renderer,
+            SDL_FRect{490.0f, 360.0f, 300.0f, 60.0f},
+            regularFontPath,
+            28.0f,
+            "SETTINGS"
+        );
+        
+        m_quitButton = std::make_unique<Button>(
+            renderer,
+            SDL_FRect{490.0f, 440.0f, 300.0f, 60.0f},
+            regularFontPath,
+            28.0f,
+            "QUIT"
+        );
     }
 
 
@@ -117,69 +114,6 @@ namespace DreamBox
 
         return SceneRequest::None;
     }
-
-    // Draw button using the Montserrat font.
-
-    void MainMenuScene::DrawButton(
-        SDL_Renderer* renderer,
-        const SDL_FRect& button,
-        const Text* text,
-        bool selected
-    ) const
-    {
-        if (selected)
-        {
-            SDL_SetRenderDrawColor(
-                renderer,
-                95, 130, 180, 255
-            );
-        }
-        else
-        {
-            SDL_SetRenderDrawColor(
-                renderer,
-                55, 65, 85, 255
-            );
-        }
-
-        SDL_RenderFillRect(
-            renderer,
-            &button
-        );
-
-        if (selected)
-        {
-            SDL_SetRenderDrawColor(
-                renderer,
-                230, 235, 245, 255
-            );
-
-            SDL_RenderRect(
-                renderer,
-                &button
-            );
-        }
-
-        if (!text)
-        {
-            return;
-        }
-
-        float textX =
-            button.x + button.w / 2.0f;
-
-        float textY =
-            button.y +
-            (button.h - text->GetHeight()) / 2.0f;
-
-        text->RenderCentered(
-            renderer,
-            textX,
-            textY
-        );
-    }
-
-    
     
 
     void MainMenuScene::Render(
@@ -219,26 +153,29 @@ namespace DreamBox
         }
 
         // Menu buttons
-        DrawButton(
-            renderer,
-            m_playButton,
-            m_playText.get(),
-            m_selectedOption == MenuOption::Play
-        );
+        if (m_playButton)
+        {
+            m_playButton->Render(
+                renderer,
+                m_selectedOption == MenuOption::Play
+            );
+        }
 
-        DrawButton(
-            renderer,
-            m_settingsButton,
-            m_settingsText.get(),
-            m_selectedOption == MenuOption::Settings
-        );
+        if (m_settingsButton)
+        {
+            m_settingsButton->Render(
+                renderer,
+                m_selectedOption == MenuOption::Settings
+            );
+        }
 
-        DrawButton(
-            renderer,
-            m_quitButton,
-            m_quitText.get(),
-            m_selectedOption == MenuOption::Quit
-        );
+        if (m_quitButton)
+        {
+            m_quitButton->Render(
+                renderer,
+                m_selectedOption == MenuOption::Quit
+            );
+        }
 
         // Footer
         if (m_footerText)
