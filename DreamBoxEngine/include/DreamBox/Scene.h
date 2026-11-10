@@ -11,6 +11,7 @@ namespace DreamBox
         None,
         StartGame,
         MainMenu,
+        Settings,
         Quit
     };
 

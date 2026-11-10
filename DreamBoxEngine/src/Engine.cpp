@@ -4,7 +4,7 @@
 #include "DreamBox/Scene.h"
 #include "DreamBox/MainMenuScene.h"
 #include "DreamBox/GameScene.h"
-
+#include "DreamBox/SettingsScene.h"
 
 namespace DreamBox
 {
@@ -101,7 +101,13 @@ namespace DreamBox
                 std::make_unique<GameScene>()
             );
             break;
-        
+        case SceneRequest::Settings:
+            ChangeScene(
+                std::make_unique<SettingsScene>(
+                    m_renderer
+                )
+            );
+            break;
         case SceneRequest::Quit:
             return false;
         

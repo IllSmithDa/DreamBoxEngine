@@ -105,7 +105,7 @@ namespace DreamBox
 
             case MenuOption::Settings:
                 // SettingsScene doesn't exist yet.
-                return SceneRequest::None;
+                return SceneRequest::Settings;
 
             case MenuOption::Quit:
                 return SceneRequest::Quit;

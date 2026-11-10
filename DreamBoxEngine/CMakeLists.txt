@@ -89,7 +89,7 @@ add_executable(
     src/GameScene.cpp
     src/MainMenuScene.cpp
     src/Text.cpp
-
+    src/SettingsScene.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -101,6 +101,7 @@ add_executable(
     include/DreamBox/GameScene.h
     include/DreamBox/MainMenuScene.h
     include/DreamBox/Text.h
+    include/DreamBox/SettingsScene.h
 )   
 
 target_include_directories(
