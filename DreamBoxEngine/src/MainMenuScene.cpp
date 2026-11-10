@@ -9,84 +9,59 @@ namespace DreamBox
         SDL_Renderer* renderer
     )
     {
-        const char* basePath =
-            SDL_GetBasePath();
-    
-        if (!basePath)
-        {
-            SDL_Log(
-                "Unable to get application path: %s",
-                SDL_GetError()
-            );
-        
-            return;
-        }
-    
-        std::string fontPath =
-            std::string(basePath) +
-            "assets/fonts/Montserrat/Montserrat-Regular.ttf";
-    
-        m_font = TTF_OpenFont(
-            fontPath.c_str(),
-            28.0f
-        );
-    
-        if (!m_font)
-        {
-            SDL_Log(
-                "Unable to load font: %s",
-                SDL_GetError()
-            );
-        
-            return;
-        }
+            const char* basePath = SDL_GetBasePath();
 
-        // load bold font with size 42
-        std::string boldFontPath =
-            std::string(basePath) +
-            "assets/fonts/Montserrat/Montserrat-Bold.ttf";
+            if (!basePath)
+            {
+                SDL_Log(
+                    "Unable to get application path: %s",
+                    SDL_GetError()
+                );
+                return;
+            }
 
-        m_titleFont = TTF_OpenFont(
-            boldFontPath.c_str(),
-            42.0f
-        );
-        
-        m_titleText =
-            CreateTextTexture(
+            std::string regularFontPath =
+                std::string(basePath) +
+                "assets/fonts/Montserrat/Montserrat-Regular.ttf";
+
+            std::string boldFontPath =
+                std::string(basePath) +
+                "assets/fonts/Montserrat/Montserrat-Bold.ttf";
+
+            m_titleText = std::make_unique<Text>(
                 renderer,
-                m_titleFont,
+                boldFontPath,
+                42.0f,
                 "DREAMBOX ENGINE"
             );
-        
-        m_playText =
-            CreateTextTexture(
+
+            m_playText = std::make_unique<Text>(
                 renderer,
-                m_font,
+                regularFontPath,
+                28.0f,
                 "PLAY"
             );
-        
-        m_settingsText =
-            CreateTextTexture(
+
+            m_settingsText = std::make_unique<Text>(
                 renderer,
-                m_font,
+                regularFontPath,
+                28.0f,
                 "SETTINGS"
             );
-        
-        m_quitText =
-            CreateTextTexture(
+
+            m_quitText = std::make_unique<Text>(
                 renderer,
-                m_font,
+                regularFontPath,
+                28.0f,
                 "QUIT"
             );
 
-        if (m_footerFont)
-        {
-            m_footerText = CreateTextTexture(
+            m_footerText = std::make_unique<Text>(
                 renderer,
-                m_footerFont,
+                regularFontPath,
+                18.0f,
                 "UP/DOWN or W/S - Navigate     ENTER - Select"
             );
-        }
     }
 
     // destructor
@@ -209,10 +184,11 @@ namespace DreamBox
     }
 
     // Draw button using the Montserrat font.
+
     void MainMenuScene::DrawButton(
         SDL_Renderer* renderer,
         const SDL_FRect& button,
-        SDL_Texture* textTexture,
+        const Text* text,
         bool selected
     ) const
     {
@@ -220,20 +196,14 @@ namespace DreamBox
         {
             SDL_SetRenderDrawColor(
                 renderer,
-                95,
-                130,
-                180,
-                255
+                95, 130, 180, 255
             );
         }
         else
         {
             SDL_SetRenderDrawColor(
                 renderer,
-                55,
-                65,
-                85,
-                255
+                55, 65, 85, 255
             );
         }
 
@@ -246,10 +216,7 @@ namespace DreamBox
         {
             SDL_SetRenderDrawColor(
                 renderer,
-                230,
-                235,
-                245,
-                255
+                230, 235, 245, 255
             );
 
             SDL_RenderRect(
@@ -258,35 +225,28 @@ namespace DreamBox
             );
         }
 
-        if (!textTexture)
+        if (!text)
         {
             return;
         }
 
-        float textWidth = 0.0f;
-        float textHeight = 0.0f;
+        float textX =
+            button.x + button.w / 2.0f;
 
-        SDL_GetTextureSize(
-            textTexture,
-            &textWidth,
-            &textHeight
-        );
+        float textY =
+            button.y +
+            (button.h - text->GetHeight()) / 2.0f;
 
-        SDL_FRect textRect{
-            button.x + (button.w - textWidth) / 2.0f,
-            button.y + (button.h - textHeight) / 2.0f,
-            textWidth,
-            textHeight
-        };
-
-        SDL_RenderTexture(
+        text->RenderCentered(
             renderer,
-            textTexture,
-            nullptr,
-            &textRect
+            textX,
+            textY
         );
     }
+
     
+    
+
     void MainMenuScene::Render(
         SDL_Renderer* renderer
     ) const
@@ -296,99 +256,65 @@ namespace DreamBox
             return;
         }
 
+        // Title
         if (m_titleText)
         {
-            float titleWidth = 0.0f;
-            float titleHeight = 0.0f;
-        
-            SDL_GetTextureSize(
-                m_titleText,
-                &titleWidth,
-                &titleHeight
-            );
-        
-            SDL_FRect titleRect{
-                640.0f - titleWidth / 2.0f,
-                150.0f,
-                titleWidth,
-                titleHeight
-            };
-        
-            SDL_RenderTexture(
+            m_titleText->RenderCentered(
                 renderer,
-                m_titleText,
-                nullptr,
-                &titleRect
+                640.0f,
+                150.0f
             );
-        
-            // Decorative underline
+
             SDL_FRect underline{
                 590.0f,
-                titleRect.y + titleHeight + 15.0f,
+                150.0f + m_titleText->GetHeight() + 15.0f,
                 100.0f,
                 3.0f
             };
-        
+
             SDL_SetRenderDrawColor(
                 renderer,
-                95,
-                150,
-                215,
-                255
+                95, 150, 215, 255
             );
-        
+
             SDL_RenderFillRect(
                 renderer,
                 &underline
             );
         }
-        
+
+        // Menu buttons
         DrawButton(
             renderer,
             m_playButton,
-            m_playText,
+            m_playText.get(),
             m_selectedOption == MenuOption::Play
         );
 
         DrawButton(
             renderer,
             m_settingsButton,
-            m_settingsText,
+            m_settingsText.get(),
             m_selectedOption == MenuOption::Settings
         );
 
         DrawButton(
             renderer,
             m_quitButton,
-            m_quitText,
+            m_quitText.get(),
             m_selectedOption == MenuOption::Quit
         );
 
+        // Footer
         if (m_footerText)
         {
-            float footerWidth = 0.0f;
-            float footerHeight = 0.0f;
-        
-            SDL_GetTextureSize(
-                m_footerText,
-                &footerWidth,
-                &footerHeight
-            );
-        
-            SDL_FRect footerRect{
-                640.0f - footerWidth / 2.0f,
-                650.0f,
-                footerWidth,
-                footerHeight
-            };
-        
-            SDL_RenderTexture(
+            m_footerText->RenderCentered(
                 renderer,
-                m_footerText,
-                nullptr,
-                &footerRect
+                640.0f,
+                650.0f
             );
         }
     }
+
 
 }
