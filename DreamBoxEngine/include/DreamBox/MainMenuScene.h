@@ -1,8 +1,10 @@
+
 #pragma once
 
-#include <SDL3_ttf/SDL_ttf.h>
-
+#include "DreamBox/Text.h"
 #include "DreamBox/Scene.h"
+
+#include <memory>
 
 namespace DreamBox
 {
@@ -13,7 +15,7 @@ namespace DreamBox
             SDL_Renderer* renderer
         );
 
-        ~MainMenuScene() override;
+        ~MainMenuScene() override = default;
 
         SceneRequest Update(
             const Input& input,
@@ -33,16 +35,10 @@ namespace DreamBox
             Count
         };
 
-        SDL_Texture* CreateTextTexture(
-            SDL_Renderer* renderer,
-            TTF_Font* font,
-            const char* text
-        );
-
         void DrawButton(
             SDL_Renderer* renderer,
             const SDL_FRect& button,
-            SDL_Texture* textTexture,
+            const Text* text,
             bool selected
         ) const;
 
@@ -61,18 +57,12 @@ namespace DreamBox
             490.0f, 440.0f, 300.0f, 60.0f
         };
 
-        // font related variables 
-        TTF_Font* m_font = nullptr;
-        TTF_Font* m_titleFont = nullptr;
+        std::unique_ptr<Text> m_titleText;
 
-        SDL_Texture* m_titleText = nullptr;
+        std::unique_ptr<Text> m_playText;
+        std::unique_ptr<Text> m_settingsText;
+        std::unique_ptr<Text> m_quitText;
 
-        SDL_Texture* m_playText = nullptr;
-        SDL_Texture* m_settingsText = nullptr;
-        SDL_Texture* m_quitText = nullptr;
-
-        // footer 
-        TTF_Font* m_footerFont = nullptr;
-        SDL_Texture* m_footerText = nullptr;
+        std::unique_ptr<Text> m_footerText;
     };
 }
