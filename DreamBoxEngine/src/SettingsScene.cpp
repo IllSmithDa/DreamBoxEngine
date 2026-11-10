@@ -7,9 +7,19 @@
 namespace DreamBox
 {
     SettingsScene::SettingsScene(
-        SDL_Renderer* renderer
+        SDL_Renderer* renderer,
+        const EngineSettings& settings,
+        int selectedIndex
     )
     {
+        if (selectedIndex >= 0 &&
+            selectedIndex <
+                static_cast<int>(MenuOption::Count))
+        {
+            m_selectedOption =
+                static_cast<MenuOption>(selectedIndex);
+        }
+
         const char* basePath = SDL_GetBasePath();
 
         if (!basePath)
@@ -40,14 +50,18 @@ namespace DreamBox
             renderer,
             regularFont,
             24.0f,
-            "FULLSCREEN: OFF (Coming Soon)"
+            settings.fullscreen
+                ? "FULLSCREEN: ON"
+                : "FULLSCREEN: OFF"
         );
 
         m_vsyncText = std::make_unique<Text>(
             renderer,
             regularFont,
             24.0f,
-            "VSYNC: ON (Coming Soon)"
+            settings.vsync
+                ? "VSYNC: ON"
+                : "VSYNC: OFF"
         );
 
         m_backText = std::make_unique<Text>(
@@ -61,7 +75,7 @@ namespace DreamBox
             renderer,
             regularFont,
             18.0f,
-            "ESC or ENTER - Return to Main Menu"
+            "UP/DOWN - Navigate    ENTER - Select    ESC - Back"
         );
     }
 
@@ -70,16 +84,103 @@ namespace DreamBox
         float
     )
     {
-        if (
-            input.IsKeyPressed(SDL_SCANCODE_ESCAPE) ||
-            input.IsKeyPressed(SDL_SCANCODE_RETURN) ||
-            input.IsKeyPressed(SDL_SCANCODE_KP_ENTER)
-        )
+        if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
         {
             return SceneRequest::MainMenu;
         }
 
+        int selected =
+            static_cast<int>(m_selectedOption);
+
+        const int optionCount =
+            static_cast<int>(MenuOption::Count);
+
+        if (input.IsKeyPressed(SDL_SCANCODE_DOWN) ||
+            input.IsKeyPressed(SDL_SCANCODE_S))
+        {
+            selected =
+                (selected + 1) % optionCount;
+        }
+
+        if (input.IsKeyPressed(SDL_SCANCODE_UP) ||
+            input.IsKeyPressed(SDL_SCANCODE_W))
+        {
+            selected =
+                (selected - 1 + optionCount) %
+                optionCount;
+        }
+
+        m_selectedOption =
+            static_cast<MenuOption>(selected);
+
+        if (input.IsKeyPressed(SDL_SCANCODE_RETURN) ||
+            input.IsKeyPressed(SDL_SCANCODE_KP_ENTER))
+        {
+            switch (m_selectedOption)
+            {
+            case MenuOption::Fullscreen:
+                return SceneRequest::ToggleFullscreen;
+
+            case MenuOption::VSync:
+                return SceneRequest::ToggleVSync;
+
+            case MenuOption::Back:
+                return SceneRequest::MainMenu;
+
+            default:
+                break;
+            }
+        }
+
         return SceneRequest::None;
+    }
+
+    void SettingsScene::DrawButton(
+        SDL_Renderer* renderer,
+        const SDL_FRect& bounds,
+        const Text* label,
+        bool selected
+    ) const
+    {
+        if (selected)
+        {
+            SDL_SetRenderDrawColor(
+                renderer, 95, 130, 180, 255
+            );
+        }
+        else
+        {
+            SDL_SetRenderDrawColor(
+                renderer, 55, 65, 85, 255
+            );
+        }
+
+        SDL_RenderFillRect(renderer, &bounds);
+
+        if (selected)
+        {
+            SDL_SetRenderDrawColor(
+                renderer, 230, 235, 245, 255
+            );
+
+            SDL_RenderRect(renderer, &bounds);
+        }
+
+        if (label)
+        {
+            const float centerX =
+                bounds.x + bounds.w / 2.0f;
+
+            const float textY =
+                bounds.y +
+                (bounds.h - label->GetHeight()) / 2.0f;
+
+            label->RenderCentered(
+                renderer,
+                centerX,
+                textY
+            );
+        }
     }
 
     void SettingsScene::Render(
@@ -95,9 +196,7 @@ namespace DreamBox
         if (m_titleText)
         {
             m_titleText->RenderCentered(
-                renderer,
-                640.0f,
-                150.0f
+                renderer, 640.0f, 150.0f
             );
 
             SDL_FRect underline{
@@ -108,80 +207,37 @@ namespace DreamBox
             };
 
             SDL_SetRenderDrawColor(
-                renderer,
-                95, 150, 215, 255
+                renderer, 95, 150, 215, 255
             );
 
-            SDL_RenderFillRect(
-                renderer,
-                &underline
-            );
+            SDL_RenderFillRect(renderer, &underline);
         }
 
-        // Settings information
-        if (m_fullscreenText)
-        {
-            m_fullscreenText->RenderCentered(
-                renderer,
-                640.0f,
-                290.0f
-            );
-        }
-
-        if (m_vsyncText)
-        {
-            m_vsyncText->RenderCentered(
-                renderer,
-                640.0f,
-                370.0f
-            );
-        }
-
-        // Back button background
-        SDL_SetRenderDrawColor(
+        DrawButton(
             renderer,
-            95, 130, 180, 255
+            m_fullscreenButton,
+            m_fullscreenText.get(),
+            m_selectedOption == MenuOption::Fullscreen
         );
 
-        SDL_RenderFillRect(
+        DrawButton(
             renderer,
-            &m_backButton
+            m_vsyncButton,
+            m_vsyncText.get(),
+            m_selectedOption == MenuOption::VSync
         );
 
-        // Back button border
-        SDL_SetRenderDrawColor(
+        DrawButton(
             renderer,
-            230, 235, 245, 255
+            m_backButton,
+            m_backText.get(),
+            m_selectedOption == MenuOption::Back
         );
 
-        SDL_RenderRect(
-            renderer,
-            &m_backButton
-        );
-
-        // Center Back label within button
-        if (m_backText)
-        {
-            float textY =
-                m_backButton.y +
-                (m_backButton.h -
-                 m_backText->GetHeight()) / 2.0f;
-
-            m_backText->RenderCentered(
-                renderer,
-                m_backButton.x +
-                    m_backButton.w / 2.0f,
-                textY
-            );
-        }
-
-        // Footer
         if (m_footerText)
         {
             m_footerText->RenderCentered(
-                renderer,
-                640.0f,
-                650.0f
+                renderer, 640.0f, 650.0f
             );
         }
     }

@@ -42,6 +42,37 @@ namespace DreamBox
             return false;
         }
 
+        if (!SDL_SetRenderLogicalPresentation(
+            m_renderer,
+            1280,
+            720,
+            SDL_LOGICAL_PRESENTATION_LETTERBOX
+        ))
+        {
+            SDL_Log(
+                "Failed to set logical presentation: %s",
+                SDL_GetError()
+            );
+        }
+
+        m_settings.fullscreen =
+            (SDL_GetWindowFlags(m_window) &
+             SDL_WINDOW_FULLSCREEN) != 0;
+
+        int currentVSync = 0;
+
+        if (SDL_GetRenderVSync(m_renderer, &currentVSync))
+        {
+            m_settings.vsync = currentVSync != 0;
+        }
+        else
+        {
+            SDL_Log(
+                "Unable to read VSync state: %s",
+                SDL_GetError()
+            );
+        }
+
         m_lastFrameTime = SDL_GetTicks();
 
         ChangeScene(
@@ -102,12 +133,18 @@ namespace DreamBox
             );
             break;
         case SceneRequest::Settings:
-            ChangeScene(
-                std::make_unique<SettingsScene>(
-                    m_renderer
-                )
-            );
+            OpenSettings();
             break;
+        case SceneRequest::ToggleFullscreen:
+            ToggleFullscreen();
+            OpenSettings(0);
+            break;
+
+        case SceneRequest::ToggleVSync:
+            ToggleVSync();
+            OpenSettings(1);
+            break;
+
         case SceneRequest::Quit:
             return false;
         
@@ -163,10 +200,87 @@ namespace DreamBox
             SDL_DestroyWindow(m_window);
             m_window = nullptr;
         }
+        SDL_Quit();
     }
 
     void Engine::ChangeScene(std::unique_ptr<Scene> scene)
     {
         m_currentScene = std::move(scene);
+    }
+
+    void Engine::OpenSettings(int selectedIndex)
+    {
+        ChangeScene(
+            std::make_unique<SettingsScene>(
+                m_renderer,
+                m_settings,
+                selectedIndex
+            )
+        );
+    }
+
+    void Engine::ToggleFullscreen()
+    {
+        if (!m_window)
+        {
+            return;
+        }
+
+        bool requestedFullscreen =
+            !m_settings.fullscreen;
+
+        if (!SDL_SetWindowFullscreen(
+            m_window,
+            requestedFullscreen
+        ))
+        {
+            SDL_Log(
+                "Failed to toggle fullscreen: %s",
+                SDL_GetError()
+            );
+            return;
+        }
+
+        m_settings.fullscreen = requestedFullscreen;
+    }
+
+    void Engine::ToggleVSync()
+    {
+        if (!m_renderer)
+        {
+            return;
+        }
+
+        bool requestedVSync =
+            !m_settings.vsync;
+
+        int interval =
+            requestedVSync ? 1 : 0;
+
+        if (!SDL_SetRenderVSync(
+            m_renderer,
+            interval
+        ))
+        {
+            SDL_Log(
+                "Failed to toggle VSync: %s",
+                SDL_GetError()
+            );
+            return;
+        }
+
+        int actualVSync = 0;
+
+        if (SDL_GetRenderVSync(
+            m_renderer,
+            &actualVSync
+        ))
+        {
+            m_settings.vsync = actualVSync != 0;
+        }
+        else
+        {
+            m_settings.vsync = requestedVSync;
+        }
     }
 }

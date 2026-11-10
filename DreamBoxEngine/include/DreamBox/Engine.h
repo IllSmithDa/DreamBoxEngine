@@ -9,6 +9,8 @@
 #include <memory>
 #include "DreamBox/Scene.h"
 #include "DreamBox/GameScene.h"
+#include "DreamBox/EngineSettings.h"
+
 
 namespace DreamBox
 {
@@ -41,5 +43,12 @@ namespace DreamBox
         std::unique_ptr<Scene> m_currentScene;
         Uint64 m_lastFrameTime = 0;
         float m_deltaTime = 0.0f;
+
+        // setting engine
+        EngineSettings m_settings;
+
+        void ToggleFullscreen();
+        void ToggleVSync();
+        void OpenSettings(int selectedIndex = 0);
     };
 }

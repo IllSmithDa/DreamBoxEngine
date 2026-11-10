@@ -12,6 +12,8 @@ namespace DreamBox
         StartGame,
         MainMenu,
         Settings,
+        ToggleFullscreen,
+        ToggleVSync,
         Quit
     };
 
