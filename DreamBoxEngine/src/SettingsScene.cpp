@@ -91,35 +91,41 @@ namespace DreamBox
             return SceneRequest::MainMenu;
         }
 
-        int selected =
-            static_cast<int>(m_selectedOption);
-
-        const int optionCount =
-            static_cast<int>(MenuOption::Count);
+        int selected = static_cast<int>(m_selectedOption);
+        const int optionCount = static_cast<int>(MenuOption::Count);
 
         if (input.IsKeyPressed(SDL_SCANCODE_DOWN) ||
             input.IsKeyPressed(SDL_SCANCODE_S))
         {
-            selected = (selected + 1) % optionCount; 
+            selected = m_keyboardSelectionActive
+                ? (selected + 1) % optionCount
+                : 0;
+
+            m_keyboardSelectionActive = true;
             m_hoveredOption.reset();
         }
-
-        if (input.IsKeyPressed(SDL_SCANCODE_UP) ||
-            input.IsKeyPressed(SDL_SCANCODE_W))
+        else if (input.IsKeyPressed(SDL_SCANCODE_UP) ||
+                 input.IsKeyPressed(SDL_SCANCODE_W))
         {
-            selected = (selected - 1 + optionCount) % optionCount;
+            selected = m_keyboardSelectionActive
+                ? (selected - 1 + optionCount) % optionCount
+                : optionCount - 1;
+
+            m_keyboardSelectionActive = true;
             m_hoveredOption.reset();
-        
         }
 
-        // mouse coordinates
+        m_selectedOption = static_cast<MenuOption>(selected);
+
+        // Mouse movement switches visual focus away from the keyboard.
         if (input.WasMouseMoved())
         {
+            m_keyboardSelectionActive = false;
+            m_hoveredOption.reset();
+
             const float mouseX = input.GetMouseX();
             const float mouseY = input.GetMouseY();
-        
-            m_hoveredOption.reset();
-        
+
             if (m_fullscreenButton &&
                 m_fullscreenButton->Contains(mouseX, mouseY))
             {
@@ -137,24 +143,24 @@ namespace DreamBox
             }
         }
 
-        // mouse click handling
+        // Mouse clicks activate the button at the click location.
         if (input.WasLeftMousePressed())
         {
             const float mouseX = input.GetClickX();
             const float mouseY = input.GetClickY();
-        
+
             if (m_fullscreenButton &&
                 m_fullscreenButton->Contains(mouseX, mouseY))
             {
                 return SceneRequest::ToggleFullscreen;
             }
-        
+
             if (m_vsyncButton &&
                 m_vsyncButton->Contains(mouseX, mouseY))
             {
                 return SceneRequest::ToggleVSync;
             }
-        
+
             if (m_backButton &&
                 m_backButton->Contains(mouseX, mouseY))
             {
@@ -162,11 +168,10 @@ namespace DreamBox
             }
         }
 
-        m_selectedOption =
-            static_cast<MenuOption>(selected);
-
-        if (input.IsKeyPressed(SDL_SCANCODE_RETURN) ||
-            input.IsKeyPressed(SDL_SCANCODE_KP_ENTER))
+        // Do not activate an invisible/stale keyboard selection.
+        if (m_keyboardSelectionActive &&
+            (input.IsKeyPressed(SDL_SCANCODE_RETURN) ||
+             input.IsKeyPressed(SDL_SCANCODE_KP_ENTER)))
         {
             switch (m_selectedOption)
             {
@@ -221,8 +226,8 @@ namespace DreamBox
         {
             m_fullscreenButton->Render(
                 renderer,
-                m_selectedOption == MenuOption::Fullscreen &&
-                    !m_hoveredOption.has_value(),
+                m_keyboardSelectionActive &&
+                    m_selectedOption == MenuOption::Fullscreen,
                 m_hoveredOption == MenuOption::Fullscreen
             );
         }
@@ -231,8 +236,8 @@ namespace DreamBox
         {
             m_vsyncButton->Render(
                 renderer,
-                m_selectedOption == MenuOption::VSync &&
-                    !m_hoveredOption.has_value(),
+                m_keyboardSelectionActive &&
+                    m_selectedOption == MenuOption::VSync,
                 m_hoveredOption == MenuOption::VSync
             );
         }
@@ -241,8 +246,8 @@ namespace DreamBox
         {
             m_backButton->Render(
                 renderer,
-                m_selectedOption == MenuOption::Back &&
-                    !m_hoveredOption.has_value(),
+                m_keyboardSelectionActive &&
+                    m_selectedOption == MenuOption::Back,
                 m_hoveredOption == MenuOption::Back
             );
         }

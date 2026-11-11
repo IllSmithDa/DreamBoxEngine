@@ -62,7 +62,7 @@ namespace DreamBox
     }
 
 
-    // update the render
+    // Update menu selection and dispatch user actions
     SceneRequest MainMenuScene::Update(
         const Input& input,
         float
@@ -74,22 +74,16 @@ namespace DreamBox
         const int optionCount =
             static_cast<int>(MenuOption::Count);
 
-        // mouse coordinates check
+        // Mouse movement takes control of the visual focus.
+        // Leaving all buttons clears the highlight entirely.
         if (input.WasMouseMoved())
         {
+            m_keyboardSelectionActive = false;
+            m_hoveredOption.reset();
+
             const float mouseX = input.GetMouseX();
             const float mouseY = input.GetMouseY();
-            
-            // temporary mouse coordinate input check
-            SDL_Log(
-                "Mouse position: X=%.1f, Y=%.1f",
-                input.GetMouseX(),
-                input.GetMouseY()
-            );
 
-            // Clear the previous hover state.
-            m_hoveredOption.reset();
-        
             if (m_playButton &&
                 m_playButton->Contains(mouseX, mouseY))
             {
@@ -106,7 +100,6 @@ namespace DreamBox
                 m_hoveredOption = MenuOption::Quit;
             }
         }
-
 
         // mouse input check
         if (input.WasLeftMousePressed())
@@ -137,22 +130,43 @@ namespace DreamBox
         if (input.IsKeyPressed(SDL_SCANCODE_DOWN) ||
             input.IsKeyPressed(SDL_SCANCODE_S))
         {
-            selected = (selected + 1) % optionCount;
+            if (!m_keyboardSelectionActive)
+            {
+                selected = 0;
+            }
+            else
+            {
+                selected = (selected + 1) % optionCount;
+            }
+        
+            m_keyboardSelectionActive = true;
             m_hoveredOption.reset();
         }
 
         if (input.IsKeyPressed(SDL_SCANCODE_UP) ||
             input.IsKeyPressed(SDL_SCANCODE_W))
         {
-            selected = (selected - 1 + optionCount) % optionCount;
+            if (!m_keyboardSelectionActive)
+            {
+                selected = optionCount - 1;
+            }
+            else
+            {
+                selected =
+                    (selected - 1 + optionCount) % optionCount;
+            }
+        
+            m_keyboardSelectionActive = true;
             m_hoveredOption.reset();
         }
 
         m_selectedOption =
             static_cast<MenuOption>(selected);
 
-        if (input.IsKeyPressed(SDL_SCANCODE_RETURN) ||
-            input.IsKeyPressed(SDL_SCANCODE_KP_ENTER))
+        // Enter only activates a visibly keyboard-selected option.
+        if (m_keyboardSelectionActive &&
+            (input.IsKeyPressed(SDL_SCANCODE_RETURN) ||
+             input.IsKeyPressed(SDL_SCANCODE_KP_ENTER)))
         {
             switch (m_selectedOption)
             {
@@ -160,7 +174,6 @@ namespace DreamBox
                 return SceneRequest::StartGame;
 
             case MenuOption::Settings:
-                // SettingsScene doesn't exist yet.
                 return SceneRequest::Settings;
 
             case MenuOption::Quit:
@@ -212,22 +225,22 @@ namespace DreamBox
         }
 
         // Menu buttons
-        if (m_playButton)
-        {
-            m_playButton->Render(
-                renderer,
-                m_selectedOption == MenuOption::Play &&
-                    !m_hoveredOption.has_value(),
-                m_hoveredOption == MenuOption::Play
-            );
-        }
+    if (m_playButton)
+    {
+        m_playButton->Render(
+            renderer,
+            m_selectedOption == MenuOption::Play &&
+                m_keyboardSelectionActive,
+            m_hoveredOption == MenuOption::Play
+        );
+    }
 
         if (m_settingsButton)
         {
             m_settingsButton->Render(
                 renderer,
                 m_selectedOption == MenuOption::Settings &&
-                    !m_hoveredOption.has_value(),
+                    m_keyboardSelectionActive,
                 m_hoveredOption == MenuOption::Settings
             );
         }
@@ -237,7 +250,7 @@ namespace DreamBox
             m_quitButton->Render(
                 renderer,
                 m_selectedOption == MenuOption::Quit &&
-                    !m_hoveredOption.has_value(),
+                    m_keyboardSelectionActive,
                 m_hoveredOption == MenuOption::Quit
             );
         }

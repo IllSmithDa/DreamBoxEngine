@@ -59,5 +59,7 @@ namespace DreamBox
         std::unique_ptr<Text> m_footerText;
 
         std::optional<MenuOption> m_hoveredOption;
+        bool m_keyboardSelectionActive = false;
+        
     };
 }
