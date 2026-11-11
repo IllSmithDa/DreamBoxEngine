@@ -79,28 +79,34 @@ namespace DreamBox
         {
             const float mouseX = input.GetMouseX();
             const float mouseY = input.GetMouseY();
-        
-            m_mouseHoverActive = false;
+            
+            // temporary mouse coordinate input check
+            SDL_Log(
+                "Mouse position: X=%.1f, Y=%.1f",
+                input.GetMouseX(),
+                input.GetMouseY()
+            );
+
+            // Clear the previous hover state.
+            m_hoveredOption.reset();
         
             if (m_playButton &&
                 m_playButton->Contains(mouseX, mouseY))
             {
-                m_selectedOption = MenuOption::Play;
-                m_mouseHoverActive = true;
+                m_hoveredOption = MenuOption::Play;
             }
             else if (m_settingsButton &&
                      m_settingsButton->Contains(mouseX, mouseY))
             {
-                m_selectedOption = MenuOption::Settings;
-                m_mouseHoverActive = true;
+                m_hoveredOption = MenuOption::Settings;
             }
             else if (m_quitButton &&
                      m_quitButton->Contains(mouseX, mouseY))
             {
-                m_selectedOption = MenuOption::Quit;
-                m_mouseHoverActive = true;
+                m_hoveredOption = MenuOption::Quit;
             }
         }
+
 
         // mouse input check
         if (input.WasLeftMousePressed())
@@ -126,7 +132,7 @@ namespace DreamBox
                 return SceneRequest::Quit;
             }
         }
-        
+
         // keyboard checks
         if (input.IsKeyPressed(SDL_SCANCODE_DOWN) ||
             input.IsKeyPressed(SDL_SCANCODE_S))
@@ -212,9 +218,9 @@ namespace DreamBox
         {
             m_playButton->Render(
                 renderer,
-                m_selectedOption == MenuOption::Play,
-                m_mouseHoverActive &&
-                m_selectedOption == MenuOption::Play
+                m_selectedOption == MenuOption::Play &&
+                    !m_hoveredOption.has_value(),
+                m_hoveredOption == MenuOption::Play
             );
         }
 
@@ -222,9 +228,9 @@ namespace DreamBox
         {
             m_settingsButton->Render(
                 renderer,
-                m_selectedOption == MenuOption::Settings,
-                m_mouseHoverActive &&
-                m_selectedOption == MenuOption::Settings
+                m_selectedOption == MenuOption::Settings &&
+                    !m_hoveredOption.has_value(),
+                m_hoveredOption == MenuOption::Settings
             );
         }
 
@@ -232,11 +238,12 @@ namespace DreamBox
         {
             m_quitButton->Render(
                 renderer,
-                m_selectedOption == MenuOption::Quit,
-                m_mouseHoverActive &&
-                m_selectedOption == MenuOption::Quit
+                m_selectedOption == MenuOption::Quit &&
+                    !m_hoveredOption.has_value(),
+                m_hoveredOption == MenuOption::Quit
             );
         }
+
         // Footer
         if (m_footerText)
         {

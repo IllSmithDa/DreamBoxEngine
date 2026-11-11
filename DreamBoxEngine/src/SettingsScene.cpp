@@ -103,7 +103,7 @@ namespace DreamBox
             selected = (selected + 1) % optionCount;
             m_mouseHoverActive = false;
         }
-        
+
         if (input.IsKeyPressed(SDL_SCANCODE_UP) ||
             input.IsKeyPressed(SDL_SCANCODE_W))
         {
@@ -119,25 +119,22 @@ namespace DreamBox
             const float mouseX = input.GetMouseX();
             const float mouseY = input.GetMouseY();
         
-            m_mouseHoverActive = false;
+            m_hoveredOption.reset();
         
             if (m_fullscreenButton &&
                 m_fullscreenButton->Contains(mouseX, mouseY))
             {
-                m_selectedOption = MenuOption::Fullscreen;
-                m_mouseHoverActive = true;
+                m_hoveredOption = MenuOption::Fullscreen;
             }
             else if (m_vsyncButton &&
                      m_vsyncButton->Contains(mouseX, mouseY))
             {
-                m_selectedOption = MenuOption::VSync;
-                m_mouseHoverActive = true;
+                m_hoveredOption = MenuOption::VSync;
             }
             else if (m_backButton &&
                      m_backButton->Contains(mouseX, mouseY))
             {
-                m_selectedOption = MenuOption::Back;
-                m_mouseHoverActive = true;
+                m_hoveredOption = MenuOption::Back;
             }
         }
 
@@ -225,29 +222,29 @@ namespace DreamBox
         {
             m_fullscreenButton->Render(
                 renderer,
-                m_selectedOption == MenuOption::Fullscreen,
-                m_mouseHoverActive &&
-                m_selectedOption == MenuOption::Fullscreen
+                m_selectedOption == MenuOption::Fullscreen &&
+                    !m_hoveredOption.has_value(),
+                m_hoveredOption == MenuOption::Fullscreen
             );
         }
-
+        
         if (m_vsyncButton)
         {
             m_vsyncButton->Render(
                 renderer,
-                m_selectedOption == MenuOption::VSync,
-                m_mouseHoverActive &&
-                m_selectedOption == MenuOption::VSync
+                m_selectedOption == MenuOption::VSync &&
+                    !m_hoveredOption.has_value(),
+                m_hoveredOption == MenuOption::VSync
             );
         }
-
+        
         if (m_backButton)
         {
             m_backButton->Render(
                 renderer,
-                m_selectedOption == MenuOption::Back,
-                m_mouseHoverActive &&
-                m_selectedOption == MenuOption::Back
+                m_selectedOption == MenuOption::Back &&
+                    !m_hoveredOption.has_value(),
+                m_hoveredOption == MenuOption::Back
             );
         }
 

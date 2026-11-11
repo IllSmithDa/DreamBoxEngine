@@ -6,6 +6,7 @@
 #include "DreamBox/EngineSettings.h"
 #include "DreamBox/Button.h"
 #include <memory>
+#include <optional>
 
 namespace DreamBox
 {
@@ -53,6 +54,6 @@ namespace DreamBox
         std::unique_ptr<Button> m_vsyncButton;
         std::unique_ptr<Button> m_backButton;
         std::unique_ptr<Text> m_footerText;
-        bool m_mouseHoverActive = false;
+        std::optional<MenuOption> m_hoveredOption;
     };
 }

@@ -5,7 +5,7 @@
 #include "DreamBox/Scene.h"
 #include "DreamBox/Button.h"
 #include <memory>
-
+#include <optional>
 
 namespace DreamBox
 {
@@ -58,6 +58,6 @@ namespace DreamBox
 
         std::unique_ptr<Text> m_footerText;
 
-        bool m_mouseHoverActive = false;
+        std::optional<MenuOption> m_hoveredOption;
     };
 }
