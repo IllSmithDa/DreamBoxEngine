@@ -138,16 +138,14 @@ namespace DreamBox
             input.IsKeyPressed(SDL_SCANCODE_S))
         {
             selected = (selected + 1) % optionCount;
-            m_mouseHoverActive = false;
+            m_hoveredOption.reset();
         }
 
         if (input.IsKeyPressed(SDL_SCANCODE_UP) ||
             input.IsKeyPressed(SDL_SCANCODE_W))
         {
-            selected =
-                (selected - 1 + optionCount) % optionCount;
-        
-            m_mouseHoverActive = false;
+            selected = (selected - 1 + optionCount) % optionCount;
+            m_hoveredOption.reset();
         }
 
         m_selectedOption =
