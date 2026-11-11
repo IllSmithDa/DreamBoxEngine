@@ -53,17 +53,5 @@ namespace DreamBox
         std::unique_ptr<Button> m_vsyncButton;
         std::unique_ptr<Button> m_backButton;
         std::unique_ptr<Text> m_footerText;
-
-        SDL_FRect m_fullscreenButton{
-            490.0f, 280.0f, 300.0f, 60.0f
-        };
-
-        SDL_FRect m_vsyncButton{
-            490.0f, 360.0f, 300.0f, 60.0f
-        };
-
-        SDL_FRect m_backButton{
-            490.0f, 440.0f, 300.0f, 60.0f
-        };
     };
 }
