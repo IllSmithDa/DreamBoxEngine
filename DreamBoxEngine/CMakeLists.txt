@@ -198,3 +198,30 @@ add_test(
     NAME CollisionTests
     COMMAND CollisionTests
 )
+
+# ==================================
+# Button Tests
+# ==================================
+
+add_executable(
+    ButtonTests
+    ../tests/ButtonTests.cpp
+)
+
+target_include_directories(
+    ButtonTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(
+    ButtonTests
+    PRIVATE
+    SDL3::SDL3
+    SDL3_ttf::SDL3_ttf
+)
+
+add_test(
+    NAME ButtonTests
+    COMMAND ButtonTests
+)

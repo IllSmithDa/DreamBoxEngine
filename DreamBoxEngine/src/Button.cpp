@@ -112,9 +112,6 @@ namespace DreamBox
 
     bool Button::Contains(float x, float y) const
     {
-        return x >= m_bounds.x &&
-               x < m_bounds.x + m_bounds.w &&
-               y >= m_bounds.y &&
-               y < m_bounds.y + m_bounds.h;
+        return ContainsPoint(m_bounds, x, y);
     }
 }

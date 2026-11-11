@@ -30,6 +30,19 @@ namespace DreamBox
         const SDL_FRect& GetBounds() const;
         bool Contains(float x, float y) const;
 
+        // used for testing
+        static constexpr bool ContainsPoint(
+            const SDL_FRect& bounds,
+            float x,
+            float y
+        ) noexcept
+        {
+            return x >= bounds.x &&
+                   x < bounds.x + bounds.w &&
+                   y >= bounds.y &&
+                   y < bounds.y + bounds.h;
+        }
+
     private:
         SDL_FRect m_bounds{};
 
