@@ -80,20 +80,25 @@ namespace DreamBox
             const float mouseX = input.GetMouseX();
             const float mouseY = input.GetMouseY();
         
+            m_mouseHoverActive = false;
+        
             if (m_playButton &&
                 m_playButton->Contains(mouseX, mouseY))
             {
                 m_selectedOption = MenuOption::Play;
+                m_mouseHoverActive = true;
             }
             else if (m_settingsButton &&
                      m_settingsButton->Contains(mouseX, mouseY))
             {
                 m_selectedOption = MenuOption::Settings;
+                m_mouseHoverActive = true;
             }
             else if (m_quitButton &&
                      m_quitButton->Contains(mouseX, mouseY))
             {
                 m_selectedOption = MenuOption::Quit;
+                m_mouseHoverActive = true;
             }
         }
 
@@ -121,21 +126,22 @@ namespace DreamBox
                 return SceneRequest::Quit;
             }
         }
+        
         // keyboard checks
-
         if (input.IsKeyPressed(SDL_SCANCODE_DOWN) ||
             input.IsKeyPressed(SDL_SCANCODE_S))
         {
-            selected =
-                (selected + 1) % optionCount;
+            selected = (selected + 1) % optionCount;
+            m_mouseHoverActive = false;
         }
 
         if (input.IsKeyPressed(SDL_SCANCODE_UP) ||
             input.IsKeyPressed(SDL_SCANCODE_W))
         {
             selected =
-                (selected - 1 + optionCount)
-                % optionCount;
+                (selected - 1 + optionCount) % optionCount;
+        
+            m_mouseHoverActive = false;
         }
 
         m_selectedOption =
@@ -206,6 +212,8 @@ namespace DreamBox
         {
             m_playButton->Render(
                 renderer,
+                m_selectedOption == MenuOption::Play,
+                m_mouseHoverActive &&
                 m_selectedOption == MenuOption::Play
             );
         }
@@ -214,6 +222,8 @@ namespace DreamBox
         {
             m_settingsButton->Render(
                 renderer,
+                m_selectedOption == MenuOption::Settings,
+                m_mouseHoverActive &&
                 m_selectedOption == MenuOption::Settings
             );
         }
@@ -222,10 +232,11 @@ namespace DreamBox
         {
             m_quitButton->Render(
                 renderer,
+                m_selectedOption == MenuOption::Quit,
+                m_mouseHoverActive &&
                 m_selectedOption == MenuOption::Quit
             );
         }
-
         // Footer
         if (m_footerText)
         {

@@ -20,10 +20,11 @@ namespace DreamBox
             float fontSize,
             const std::string& label
         );
-
+        
         void Render(
             SDL_Renderer* renderer,
-            bool selected
+            bool selected,
+            bool hovered = false
         ) const;
 
         const SDL_FRect& GetBounds() const;

@@ -100,16 +100,17 @@ namespace DreamBox
         if (input.IsKeyPressed(SDL_SCANCODE_DOWN) ||
             input.IsKeyPressed(SDL_SCANCODE_S))
         {
-            selected =
-                (selected + 1) % optionCount;
+            selected = (selected + 1) % optionCount;
+            m_mouseHoverActive = false;
         }
-
+        
         if (input.IsKeyPressed(SDL_SCANCODE_UP) ||
             input.IsKeyPressed(SDL_SCANCODE_W))
         {
             selected =
-                (selected - 1 + optionCount) %
-                optionCount;
+                (selected - 1 + optionCount) % optionCount;
+        
+            m_mouseHoverActive = false;
         }
 
         // mouse coordinates
@@ -118,20 +119,25 @@ namespace DreamBox
             const float mouseX = input.GetMouseX();
             const float mouseY = input.GetMouseY();
         
+            m_mouseHoverActive = false;
+        
             if (m_fullscreenButton &&
                 m_fullscreenButton->Contains(mouseX, mouseY))
             {
                 m_selectedOption = MenuOption::Fullscreen;
+                m_mouseHoverActive = true;
             }
             else if (m_vsyncButton &&
                      m_vsyncButton->Contains(mouseX, mouseY))
             {
                 m_selectedOption = MenuOption::VSync;
+                m_mouseHoverActive = true;
             }
             else if (m_backButton &&
                      m_backButton->Contains(mouseX, mouseY))
             {
                 m_selectedOption = MenuOption::Back;
+                m_mouseHoverActive = true;
             }
         }
 
@@ -219,6 +225,8 @@ namespace DreamBox
         {
             m_fullscreenButton->Render(
                 renderer,
+                m_selectedOption == MenuOption::Fullscreen,
+                m_mouseHoverActive &&
                 m_selectedOption == MenuOption::Fullscreen
             );
         }
@@ -227,6 +235,8 @@ namespace DreamBox
         {
             m_vsyncButton->Render(
                 renderer,
+                m_selectedOption == MenuOption::VSync,
+                m_mouseHoverActive &&
                 m_selectedOption == MenuOption::VSync
             );
         }
@@ -235,6 +245,8 @@ namespace DreamBox
         {
             m_backButton->Render(
                 renderer,
+                m_selectedOption == MenuOption::Back,
+                m_mouseHoverActive &&
                 m_selectedOption == MenuOption::Back
             );
         }

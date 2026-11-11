@@ -57,5 +57,7 @@ namespace DreamBox
         std::unique_ptr<Text> m_quitText;
 
         std::unique_ptr<Text> m_footerText;
+
+        bool m_mouseHoverActive = false;
     };
 }

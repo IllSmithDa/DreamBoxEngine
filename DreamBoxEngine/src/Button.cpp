@@ -20,18 +20,29 @@ namespace DreamBox
         );
     }
 
+    
     void Button::Render(
         SDL_Renderer* renderer,
-        bool selected
+        bool selected,
+        bool hovered
     ) const
     {
         if (!renderer)
         {
             return;
         }
-
-        if (selected)
+    
+        if (hovered)
         {
+            // Brighter blue when mouse is hovering
+            SDL_SetRenderDrawColor(
+                renderer,
+                120, 165, 215, 255
+            );
+        }
+        else if (selected)
+        {
+            // Keyboard selected
             SDL_SetRenderDrawColor(
                 renderer,
                 95, 130, 180, 255
@@ -39,48 +50,60 @@ namespace DreamBox
         }
         else
         {
+            // Normal button
             SDL_SetRenderDrawColor(
                 renderer,
                 55, 65, 85, 255
             );
         }
-
+    
         SDL_RenderFillRect(
             renderer,
             &m_bounds
         );
-
-        if (selected)
+    
+        if (hovered || selected)
         {
-            SDL_SetRenderDrawColor(
-                renderer,
-                230, 235, 245, 255
-            );
-
+            if (hovered)
+            {
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    255, 255, 255, 255
+                );
+            }
+            else
+            {
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    230, 235, 245, 255
+                );
+            }
+        
             SDL_RenderRect(
                 renderer,
                 &m_bounds
             );
         }
-
+    
         if (!m_label)
         {
             return;
         }
-
+    
         const float centerX =
             m_bounds.x + m_bounds.w / 2.0f;
-
+    
         const float textY =
             m_bounds.y +
             (m_bounds.h - m_label->GetHeight()) / 2.0f;
-
+    
         m_label->RenderCentered(
             renderer,
             centerX,
             textY
         );
     }
+
 
     const SDL_FRect& Button::GetBounds() const
     {
