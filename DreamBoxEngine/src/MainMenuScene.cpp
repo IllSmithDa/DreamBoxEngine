@@ -74,6 +74,55 @@ namespace DreamBox
         const int optionCount =
             static_cast<int>(MenuOption::Count);
 
+        // mouse coordinates check
+        if (input.WasMouseMoved())
+        {
+            const float mouseX = input.GetMouseX();
+            const float mouseY = input.GetMouseY();
+        
+            if (m_playButton &&
+                m_playButton->Contains(mouseX, mouseY))
+            {
+                m_selectedOption = MenuOption::Play;
+            }
+            else if (m_settingsButton &&
+                     m_settingsButton->Contains(mouseX, mouseY))
+            {
+                m_selectedOption = MenuOption::Settings;
+            }
+            else if (m_quitButton &&
+                     m_quitButton->Contains(mouseX, mouseY))
+            {
+                m_selectedOption = MenuOption::Quit;
+            }
+        }
+
+        // mouse input check
+        if (input.WasLeftMousePressed())
+        {
+            const float mouseX = input.GetClickX();
+            const float mouseY = input.GetClickY();
+        
+            if (m_playButton &&
+                m_playButton->Contains(mouseX, mouseY))
+            {
+                return SceneRequest::StartGame;
+            }
+        
+            if (m_settingsButton &&
+                m_settingsButton->Contains(mouseX, mouseY))
+            {
+                return SceneRequest::Settings;
+            }
+        
+            if (m_quitButton &&
+                m_quitButton->Contains(mouseX, mouseY))
+            {
+                return SceneRequest::Quit;
+            }
+        }
+        // keyboard checks
+
         if (input.IsKeyPressed(SDL_SCANCODE_DOWN) ||
             input.IsKeyPressed(SDL_SCANCODE_S))
         {

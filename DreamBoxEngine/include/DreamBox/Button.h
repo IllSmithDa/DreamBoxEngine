@@ -27,6 +27,7 @@ namespace DreamBox
         ) const;
 
         const SDL_FRect& GetBounds() const;
+        bool Contains(float x, float y) const;
 
     private:
         SDL_FRect m_bounds{};

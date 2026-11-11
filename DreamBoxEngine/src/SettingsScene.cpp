@@ -112,6 +112,54 @@ namespace DreamBox
                 optionCount;
         }
 
+        // mouse coordinates
+        if (input.WasMouseMoved())
+        {
+            const float mouseX = input.GetMouseX();
+            const float mouseY = input.GetMouseY();
+        
+            if (m_fullscreenButton &&
+                m_fullscreenButton->Contains(mouseX, mouseY))
+            {
+                m_selectedOption = MenuOption::Fullscreen;
+            }
+            else if (m_vsyncButton &&
+                     m_vsyncButton->Contains(mouseX, mouseY))
+            {
+                m_selectedOption = MenuOption::VSync;
+            }
+            else if (m_backButton &&
+                     m_backButton->Contains(mouseX, mouseY))
+            {
+                m_selectedOption = MenuOption::Back;
+            }
+        }
+
+        // mouse click handling
+        if (input.WasLeftMousePressed())
+        {
+            const float mouseX = input.GetClickX();
+            const float mouseY = input.GetClickY();
+        
+            if (m_fullscreenButton &&
+                m_fullscreenButton->Contains(mouseX, mouseY))
+            {
+                return SceneRequest::ToggleFullscreen;
+            }
+        
+            if (m_vsyncButton &&
+                m_vsyncButton->Contains(mouseX, mouseY))
+            {
+                return SceneRequest::ToggleVSync;
+            }
+        
+            if (m_backButton &&
+                m_backButton->Contains(mouseX, mouseY))
+            {
+                return SceneRequest::MainMenu;
+            }
+        }
+
         m_selectedOption =
             static_cast<MenuOption>(selected);
 

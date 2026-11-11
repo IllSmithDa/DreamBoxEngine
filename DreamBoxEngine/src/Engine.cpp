@@ -83,15 +83,37 @@ namespace DreamBox
     }
 
 
+
     bool Engine::HandleEvent(const SDL_Event& event)
     {
         if (event.type == SDL_EVENT_QUIT)
         {
             return false;
         }
-
+    
+        SDL_Event convertedEvent = event;
+    
+        if (m_renderer)
+        {
+            if (!SDL_ConvertEventToRenderCoordinates(
+                m_renderer,
+                &convertedEvent
+            ))
+            {
+                SDL_Log(
+                    "Failed to convert input coordinates: %s",
+                    SDL_GetError()
+                );
+            
+                return true;
+            }
+        }
+    
+        m_input.HandleEvent(convertedEvent);
+    
         return true;
     }
+
 
     bool Engine::Update()
     {
