@@ -5,12 +5,13 @@
 #include "DreamBox/Scene.h"
 #include "DreamBox/Player.h"
 #include "DreamBox/Wall.h"
+#include "DreamBox/Texture.h"
 namespace DreamBox
 {
     class GameScene : public Scene
     {
     public:
-        GameScene();
+        explicit GameScene(SDL_Renderer* renderer);
 
         SceneRequest Update(
             const Input& input,
@@ -32,5 +33,8 @@ namespace DreamBox
         private:
         Player m_player;
         std::vector<Wall> m_walls;
+
+        // textures 
+        std::unique_ptr<Texture> m_playerTexture;
     };
 }

@@ -12,6 +12,31 @@ namespace DreamBox
             200.0f
         }
     {
+
+            const char* basePath = SDL_GetBasePath();
+            if (!basePath)
+            {
+                SDL_Log(
+                    "Unable to get application path: %s",
+                    SDL_GetError()
+                );
+                return;
+            }
+        
+            std::string texturePath =
+                std::string(basePath) +
+                "assets/sprites/characters/player_sprites.png";
+        
+            m_playerTexture = std::make_unique<Texture>(
+                renderer,
+                texturePath
+            );
+        
+            if (!m_playerTexture->IsLoaded())
+            {
+                SDL_Log("Failed to load player sprite sheet");
+            }
+
         // Outer walls
         m_walls.emplace_back(
             50.0f,
@@ -101,7 +126,29 @@ namespace DreamBox
         SDL_Renderer* renderer
     ) const
     {
-        m_player.Render(renderer);
+        
+        const SDL_FRect idleFrame{
+            0.0f,
+            0.0f,
+            16.0f,
+            16.0f
+        };
+        
+        if (m_playerTexture &&
+            m_playerTexture->IsLoaded())
+        {
+            m_playerTexture->Render(
+                renderer,
+                idleFrame,
+                m_player.GetBounds()
+            );
+        }
+        else
+        {
+            // Fall back to the original player rectangle.
+            m_player.Render(renderer);
+        }
+
 
         for (const Wall& wall : m_walls)
         {

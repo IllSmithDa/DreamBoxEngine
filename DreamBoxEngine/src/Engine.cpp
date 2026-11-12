@@ -151,7 +151,9 @@ namespace DreamBox
             break;
         case SceneRequest::StartGame:
             ChangeScene(
-                std::make_unique<GameScene>()
+                std::make_unique<GameScene>(
+                    m_renderer
+                )
             );
             break;
         case SceneRequest::Settings:
