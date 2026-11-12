@@ -91,6 +91,7 @@ add_executable(
     src/Text.cpp
     src/SettingsScene.cpp
     src/Button.cpp
+    src/Texture.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -104,6 +105,7 @@ add_executable(
     include/DreamBox/Text.h
     include/DreamBox/SettingsScene.h
     include/DreamBox/Button.h
+    include/DreamBox/Texture.h
 )   
 
 target_include_directories(
