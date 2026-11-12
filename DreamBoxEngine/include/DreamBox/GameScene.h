@@ -11,7 +11,7 @@ namespace DreamBox
     class GameScene : public Scene
     {
     public:
-        explicit GameScene(SDL_Renderer* renderer);
+        GameScene(SDL_Renderer* renderer);
 
         SceneRequest Update(
             const Input& input,

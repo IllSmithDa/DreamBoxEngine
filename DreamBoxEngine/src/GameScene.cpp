@@ -3,7 +3,7 @@
 
 namespace DreamBox
 {
-    GameScene::GameScene()
+    GameScene::GameScene(SDL_Renderer* renderer)
         : m_player{
             300.0f,
             200.0f,
