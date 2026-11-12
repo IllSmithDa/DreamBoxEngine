@@ -173,6 +173,21 @@ add_custom_command(
     VERBATIM
 )
 
+# copy other assets like textures
+
+
+# Copy all game assets beside the executable
+add_custom_command(
+    TARGET DreamBoxEngine
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets"
+    COMMENT "Copying DreamBox Engine assets"
+)
+
+
+
 # -------------------------
 # Collision Tests
 # -------------------------

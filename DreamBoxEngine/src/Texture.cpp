@@ -28,7 +28,7 @@ namespace DreamBox
 
             return;
         }
-
+        
         // Convert the image into an SDL texture.
         m_texture = SDL_CreateTextureFromSurface(
             renderer,
