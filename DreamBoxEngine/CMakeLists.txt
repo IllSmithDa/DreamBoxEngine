@@ -107,7 +107,7 @@ add_executable(
     include/DreamBox/SettingsScene.h
     include/DreamBox/Button.h
     include/DreamBox/Texture.h
-    include/DreamBox/SpriteAnimator.cpp
+    include/DreamBox/SpriteAnimator.h
 )   
 
 target_include_directories(
