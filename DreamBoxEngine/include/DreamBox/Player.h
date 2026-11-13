@@ -31,7 +31,7 @@ namespace DreamBox
             const Input& input,
             float deltaTime
         ) const;
-
+        SDL_FRect GetCollisionBounds() const;
     private:
         float m_speed;
     };

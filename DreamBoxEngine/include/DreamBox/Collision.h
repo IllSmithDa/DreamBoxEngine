@@ -11,5 +11,9 @@ namespace DreamBox
             const GameObject& first,
             const GameObject& second
         );
+        static bool Intersects(
+            const SDL_FRect& first,
+            const SDL_FRect& second
+        );
     };
 }

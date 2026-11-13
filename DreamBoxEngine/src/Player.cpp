@@ -126,4 +126,27 @@ namespace DreamBox
             &m_bounds
         );
     }
+    
+    SDL_FRect Player::GetCollisionBounds() const
+    {
+        // Full player bounds used for rendering.
+        const SDL_FRect visual = GetBounds();
+    
+        // Collision dimensions.
+        constexpr float hitboxWidth = 48.0f;
+        constexpr float hitboxHeight = 32.0f;
+    
+        // Distance above the sprite's bottom edge.
+        constexpr float bottomOffset = 8.0f;
+    
+        SDL_FRect collision{
+            visual.x + (visual.w - hitboxWidth) / 2.0f,
+            visual.y + visual.h - hitboxHeight - bottomOffset,
+            hitboxWidth,
+            hitboxHeight
+        };
+    
+        return collision;
+    }
+
 }

@@ -12,4 +12,15 @@ namespace DreamBox
             &second.GetBounds()
         );
     }
+
+    bool Collision::Intersects(
+        const SDL_FRect& first,
+        const SDL_FRect& second
+    )
+    {
+        return SDL_HasRectIntersectionFloat(
+            &first,
+            &second
+        );
+    }
 }

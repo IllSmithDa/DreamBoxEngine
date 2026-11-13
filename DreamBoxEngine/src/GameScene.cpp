@@ -88,6 +88,8 @@ namespace DreamBox
     {
         if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
         {
+                m_showCollisionBounds = !m_showCollisionBounds;
+
             return SceneRequest::MainMenu;
         }
 
@@ -173,16 +175,54 @@ const SDL_FRect sourceFrame{
         {
             wall.Render(renderer);
         }
+
+
+        if (m_showCollisionBounds)
+        {
+            // Outline the player's visual bounds.
+            const SDL_FRect visualBounds =
+                m_player.GetBounds();
+        
+            SDL_SetRenderDrawColor(
+                renderer,
+                255, 190, 50, 255
+            );
+        
+            SDL_RenderRect(
+                renderer,
+                &visualBounds
+            );
+        
+            // Outline the actual collision hitbox.
+            const SDL_FRect collisionBounds =
+                m_player.GetCollisionBounds();
+        
+            SDL_SetRenderDrawColor(
+                renderer,
+                50, 230, 150, 255
+            );
+        
+            SDL_RenderRect(
+                renderer,
+                &collisionBounds
+            );
+        }
+
     }
+
 
 
     bool GameScene::PlayerCollidesWithWall() const
     {
+        const SDL_FRect playerHitbox =
+            m_player.GetCollisionBounds();
+
         for (const Wall& wall : m_walls)
         {
             if (Collision::Intersects(
-                    m_player,
-                    wall))
+                playerHitbox,
+                wall.GetBounds()
+            ))
             {
                 return true;
             }
@@ -190,6 +230,7 @@ const SDL_FRect sourceFrame{
 
         return false;
     }
+
 
     void GameScene::UpdateAnimation(
         float movementX,

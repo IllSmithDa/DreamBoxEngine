@@ -62,6 +62,6 @@ namespace DreamBox
             float deltaTime
         );
 
-        
+        bool m_showCollisionBounds = false;
     };
 }
