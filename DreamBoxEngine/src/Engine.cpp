@@ -73,7 +73,7 @@ namespace DreamBox
             );
         }
 
-        m_lastFrameTime = SDL_GetTicks();
+        m_lastFrameTime = SDL_GetTicksNS();
 
         ChangeScene(
             std::make_unique<MainMenuScene>(m_renderer)
@@ -117,13 +117,14 @@ namespace DreamBox
 
     bool Engine::Update()
     {
-        Uint64 currentTime =
-            SDL_GetTicks();
-    
-        m_deltaTime =
-            static_cast<float>(
+        const Uint64 currentTime = SDL_GetTicksNS();
+            
+        m_deltaTime = static_cast<float>(
+            static_cast<double>(
                 currentTime - m_lastFrameTime
-            ) / 1000.0f;
+            ) / 1'000'000'000.0
+        );
+
         
         m_lastFrameTime =
             currentTime;

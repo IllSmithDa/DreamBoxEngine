@@ -28,6 +28,10 @@ namespace DreamBox
         float deltaTime
     )
     {
+        if (deltaTime <= 0.0f)
+        {
+            return;
+        }
         constexpr float epsilon = 0.0001f;
 
         const bool moving =
