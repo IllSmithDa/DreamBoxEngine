@@ -133,7 +133,7 @@ namespace DreamBox
 
         const float movementY = currentBounds.y - previousBounds.y;
 
-        UpdateAnimation(
+        m_playerAnimator.Update(
             movementX,
             movementY,
             deltaTime
@@ -147,14 +147,7 @@ namespace DreamBox
         SDL_Renderer* renderer
     ) const
     {
-        
-        
-const SDL_FRect sourceFrame{
-    static_cast<float>(m_animationFrame) * FRAME_SIZE,
-    static_cast<float>(m_facing) * FRAME_SIZE,
-    FRAME_SIZE,
-    FRAME_SIZE
-};
+        const SDL_FRect sourceFrame = m_playerAnimator.GetSourceRect();
 
         if (m_playerTexture &&
             m_playerTexture->IsLoaded())
@@ -229,54 +222,6 @@ const SDL_FRect sourceFrame{
         }
 
         return false;
-    }
-
-
-    void GameScene::UpdateAnimation(
-        float movementX,
-        float movementY,
-        float deltaTime
-    )
-    {
-        constexpr float epsilon = 0.0001f;
-
-        const bool isMoving =
-            std::fabs(movementX) > epsilon ||
-            std::fabs(movementY) > epsilon;
-
-        // Return to idle animation when stationary.
-        if (!isMoving)
-        {
-            m_animationFrame = 0;
-            m_animationTimer = 0.0f;
-            return;
-        }
-
-        // Determine which direction the character faces.
-        if (std::fabs(movementX) >
-            std::fabs(movementY))
-        {
-            m_facing = movementX > 0.0f
-                ? Facing::Right
-                : Facing::Left;
-        }
-        else
-        {
-            m_facing = movementY > 0.0f
-                ? Facing::Down
-                : Facing::Up;
-        }
-
-        // Advance animation using delta time.
-        m_animationTimer += deltaTime;
-
-        while (m_animationTimer >= FRAME_DURATION)
-        {
-            m_animationTimer -= FRAME_DURATION;
-
-            m_animationFrame =
-                (m_animationFrame + 1) % FRAME_COUNT;
-        }
     }
 
 }

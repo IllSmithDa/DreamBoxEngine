@@ -38,29 +38,12 @@ namespace DreamBox
         std::unique_ptr<Texture> m_playerTexture;
 
         // player sprites animation
-        enum class Facing
-        {
-            Down = 0,
-            Up = 1,
-            Right = 2,
-            Left = 3
+        SpriteAnimator m_playerAnimator{
+            16.0f,
+            16.0f,
+            4,
+            0.15f
         };
-
-        Facing m_facing = Facing::Down;
-
-        int m_animationFrame = 0;
-
-        float m_animationTimer = 0.0f;
-
-        static constexpr float FRAME_SIZE = 16.0f;
-        static constexpr int FRAME_COUNT = 4;
-        static constexpr float FRAME_DURATION = 0.15f;
-
-        void UpdateAnimation(
-            float movementX,
-            float movementY,
-            float deltaTime
-        );
 
         bool m_showCollisionBounds = false;
     };
