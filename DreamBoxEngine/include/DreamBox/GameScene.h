@@ -7,7 +7,7 @@
 #include "DreamBox/Wall.h"
 #include "DreamBox/Texture.h"
 #include "DreamBox/SpriteAnimator.h"
-
+#include "DreamBox/Tilemap.h"
 
 namespace DreamBox
 {
@@ -49,5 +49,9 @@ namespace DreamBox
         };
 
         bool m_showCollisionBounds = false;
+
+        // tilemap
+        Tilemap m_tilemap;
+        
     };
 }

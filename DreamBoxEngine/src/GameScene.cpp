@@ -28,43 +28,6 @@ namespace DreamBox
             }
     
 
-        // Outer walls
-        m_walls.emplace_back(
-            50.0f,
-            50.0f,
-            40.0f,
-            600.0f
-        );
-
-        m_walls.emplace_back(
-            1190.0f,
-            50.0f,
-            40.0f,
-            600.0f
-        );
-
-        m_walls.emplace_back(
-            50.0f,
-            50.0f,
-            1180.0f,
-            40.0f
-        );
-
-        m_walls.emplace_back(
-            50.0f,
-            610.0f,
-            1180.0f,
-            40.0f
-        );
-
-        // Interior obstacle
-        m_walls.emplace_back(
-            600.0f,
-            250.0f,
-            60.0f,
-            250.0f
-        );
-
         std::string texturePath =
             std::string(basePath) +
             "assets/sprites/characters/player_sprites.png";
@@ -164,10 +127,8 @@ namespace DreamBox
         }
 
 
-        for (const Wall& wall : m_walls)
-        {
-            wall.Render(renderer);
-        }
+        // tile map rendering
+        m_tilemap.Render(renderer);
 
 
         if (m_showCollisionBounds)
@@ -202,26 +163,13 @@ namespace DreamBox
         }
 
     }
-
-
-
+    
     bool GameScene::PlayerCollidesWithWall() const
     {
-        const SDL_FRect playerHitbox =
-            m_player.GetCollisionBounds();
-
-        for (const Wall& wall : m_walls)
-        {
-            if (Collision::Intersects(
-                playerHitbox,
-                wall.GetBounds()
-            ))
-            {
-                return true;
-            }
-        }
-
-        return false;
+        return m_tilemap.CollidesWithWall(
+            m_player.GetCollisionBounds()
+        );
     }
+
 
 }

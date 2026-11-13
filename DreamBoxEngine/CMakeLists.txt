@@ -93,6 +93,7 @@ add_executable(
     src/Button.cpp
     src/Texture.cpp
     src/SpriteAnimator.cpp
+    src/Tilemap.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -108,6 +109,7 @@ add_executable(
     include/DreamBox/Button.h
     include/DreamBox/Texture.h
     include/DreamBox/SpriteAnimator.h
+    include/DreamBox/Tilemap.h
 )   
 
 target_include_directories(
