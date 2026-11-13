@@ -115,9 +115,9 @@ namespace DreamBox
 
         SDL_SetRenderDrawColor(
             renderer,
-            80,
-            180,
             255,
+            50,
+            50,
             255
         );
 
