@@ -110,6 +110,10 @@ namespace DreamBox
         SDL_Renderer* renderer
     ) const
     {
+        
+        // tile map rendering
+        m_tilemap.Render(renderer);
+
         const SDL_FRect sourceFrame = m_playerAnimator.GetSourceRect();
 
         if (m_playerTexture &&
@@ -125,10 +129,6 @@ namespace DreamBox
         {
             m_player.Render(renderer);
         }
-
-
-        // tile map rendering
-        m_tilemap.Render(renderer);
 
 
         if (m_showCollisionBounds)
