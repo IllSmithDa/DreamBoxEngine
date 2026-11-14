@@ -154,42 +154,47 @@ endif()
 # Assets
 # -------------------------
 
+# Verify that the asset directory exists.
+set(DREAMBOX_ASSETS_DIR
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets"
+)
+
+if(NOT EXISTS "${DREAMBOX_ASSETS_DIR}")
+    message(FATAL_ERROR
+        "DreamBox Engine assets directory was not found"
+    )
+endif()
+
+# Verify the required Montserrat font.
 if(NOT EXISTS
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/Montserrat/Montserrat-Regular.ttf"
+    "${DREAMBOX_ASSETS_DIR}/fonts/Montserrat/Montserrat-Regular.ttf"
 )
     message(FATAL_ERROR
         "Montserrat-Regular.ttf was not found"
     )
 endif()
 
-# Copy Montserrat font assets beside the executable.
-add_custom_command(
-    TARGET DreamBoxEngine
-    POST_BUILD
+# Synchronize the entire assets directory on every build.
+add_custom_target(
+    CopyDreamBoxAssets ALL
 
     COMMAND ${CMAKE_COMMAND} -E make_directory
-        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets/fonts/Montserrat"
+        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets"
 
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/assets/fonts/Montserrat"
-        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets/fonts/Montserrat"
+        "${DREAMBOX_ASSETS_DIR}"
+        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets"
+
+    COMMENT "Synchronizing DreamBox Engine assets..."
 
     VERBATIM
 )
 
-# copy other assets like textures
-
-
-# Copy all game assets beside the executable
-add_custom_command(
-    TARGET DreamBoxEngine
-    POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/assets"
-        "$<TARGET_FILE_DIR:DreamBoxEngine>/assets"
-    COMMENT "Copying DreamBox Engine assets"
+# Also run asset copying when building only DreamBoxEngine.
+add_dependencies(
+    DreamBoxEngine
+    CopyDreamBoxAssets
 )
-
 
 
 # -------------------------
