@@ -2,7 +2,8 @@
 #pragma once
 
 #include <SDL3/SDL_render.h>
-
+#include "DreamBox/Texture.h"
+#include <memory>
 #include <array>
 #include <cstdint>
 
@@ -14,6 +15,8 @@ namespace DreamBox
         static constexpr int Columns = 32;
         static constexpr int Rows = 18;
         static constexpr float TileSize = 40.0f;
+
+        void LoadTileset(SDL_Renderer* renderer);
 
         Tilemap();
 
@@ -36,5 +39,8 @@ namespace DreamBox
             int column,
             int row
         ) const;
+
+        std::unique_ptr<Texture> m_tileset;
+        
     };
 }

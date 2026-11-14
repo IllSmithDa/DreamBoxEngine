@@ -16,16 +16,16 @@ namespace DreamBox
             200.0f
         }
     {
-
-            const char* basePath = SDL_GetBasePath();
-            if (!basePath)
-            {
-                SDL_Log(
-                    "Unable to get application path: %s",
-                    SDL_GetError()
-                );
-                return;
-            }
+        m_tilemap.LoadTileset(renderer);
+        const char* basePath = SDL_GetBasePath( );
+        if (!basePath)
+        {
+            SDL_Log(
+                "Unable to get application path: %s",
+                SDL_GetError()
+            );
+            return;
+        }
     
 
         std::string texturePath =
