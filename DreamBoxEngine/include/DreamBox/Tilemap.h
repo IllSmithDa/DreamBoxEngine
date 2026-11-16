@@ -26,6 +26,7 @@ namespace DreamBox
             const SDL_FRect& hitbox
         ) const;
 
+        bool LoadFromFile(const std::string& filePath);
     private:
         enum class Tile : std::uint8_t
         {

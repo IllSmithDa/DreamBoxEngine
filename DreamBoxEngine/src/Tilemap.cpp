@@ -3,6 +3,7 @@
 #include <string>
 #include "DreamBox/Tilemap.h"
 #include "DreamBox/Collision.h"
+#include <fstream>
 
 namespace DreamBox
 {
@@ -181,6 +182,113 @@ namespace DreamBox
         {
             SDL_Log("Tilemap texture loaded successfully");
         }
+    }
+
+
+    bool Tilemap::LoadFromFile(
+        const std::string& filePath
+    )
+    {
+        std::ifstream file(filePath);
+    
+        if (!file.is_open())
+        {
+            SDL_Log(
+                "Failed to open map file: %s",
+                filePath.c_str()
+            );
+        
+            return false;
+        }
+    
+        // Temporary storage prevents a bad map
+        // from partially replacing the current map.
+        std::array<Tile, Columns * Rows> newTiles{};
+    
+        std::string line;
+    
+        for (int row = 0; row < Rows; ++row)
+        {
+            if (!std::getline(file, line))
+            {
+                SDL_Log(
+                    "Map has too few rows: %s",
+                    filePath.c_str()
+                );
+            
+                return false;
+            }
+        
+            // Handle Windows-style CRLF line endings.
+            if (!line.empty() && line.back() == '\r')
+            {
+                line.pop_back();
+            }
+        
+            if (line.size() !=
+                static_cast<std::size_t>(Columns))
+            {
+                SDL_Log(
+                    "Invalid map width at row %d. "
+                    "Expected %d, found %zu.",
+                    row + 1,
+                    Columns,
+                    line.size()
+                );
+            
+                return false;
+            }
+        
+            for (int col = 0; col < Columns; ++col)
+            {
+                Tile tile;
+            
+                switch (line[col])
+                {
+                    case '.':
+                        tile = Tile::Floor;
+                        break;
+                
+                    case '#':
+                        tile = Tile::Wall;
+                        break;
+                
+                    default:
+                        SDL_Log(
+                            "Invalid tile '%c' at row %d, "
+                            "column %d.",
+                            line[col],
+                            row + 1,
+                            col + 1
+                        );
+                    
+                        return false;
+                }
+            
+                newTiles[row * Columns + col] = tile;
+            }
+        }
+    
+        // Reject files with more rows than expected.
+        if (std::getline(file, line))
+        {
+            SDL_Log(
+                "Map has too many rows: %s",
+                filePath.c_str()
+            );
+        
+            return false;
+        }
+    
+        // Only replace the current map after validation.
+        m_tiles = newTiles;
+    
+        SDL_Log(
+            "Map loaded successfully: %s",
+            filePath.c_str()
+        );
+    
+        return true;
     }
 
 }
