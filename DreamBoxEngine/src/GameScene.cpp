@@ -26,7 +26,21 @@ namespace DreamBox
             );
             return;
         }
-    
+        
+
+        // Load the external map layout.
+        const std::string mapPath =
+            std::string(basePath) +
+            "assets/maps/level_01.txt";
+
+        if (!m_tilemap.LoadFromFile(mapPath))
+        {
+            SDL_Log(
+                "Failed to load external map. "
+                "Using the default tilemap."
+            );
+        }
+
 
         std::string texturePath =
             std::string(basePath) +
