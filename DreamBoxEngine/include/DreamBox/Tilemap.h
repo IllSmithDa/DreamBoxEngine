@@ -6,8 +6,6 @@
 #include <memory>
 #include <array>
 #include <cstdint>
-#include <string>
-
 
 namespace DreamBox
 {
@@ -29,7 +27,6 @@ namespace DreamBox
         ) const;
 
         bool LoadFromFile(const std::string& filePath);
-
     private:
         enum class Tile : std::uint8_t
         {
