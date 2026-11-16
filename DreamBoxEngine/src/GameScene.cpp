@@ -16,6 +16,14 @@ namespace DreamBox
             200.0f
         }
     {
+
+        if (!LoadLevel(1))
+        {
+            SDL_Log(
+                "Unable to load Level 1. "
+                "Using the default tilemap."
+            );
+        }
         m_tilemap.LoadTileset(renderer);
         const char* basePath = SDL_GetBasePath( );
         if (!basePath)
@@ -167,7 +175,36 @@ namespace DreamBox
             movementY,
             deltaTime
         );
-    
+        
+
+        // Check whether the player has entered an exit tile.
+        const auto exitBounds = m_tilemap.GetExitBounds();
+            
+        bool onExit = false;
+
+        if (exitBounds.has_value())
+        {
+            onExit = Collision::Intersects(
+                m_player.GetCollisionBounds(),
+                exitBounds.value()
+            );
+        }
+
+        if (onExit && !m_wasOnExit)
+        {
+            m_wasOnExit = true;
+        
+            // Two-level prototype: toggle between maps.
+            const int nextLevel =
+                (m_currentLevel == 1) ? 2 : 1;
+        
+            LoadLevel(nextLevel);
+        }
+        else if (!onExit)
+        {
+            m_wasOnExit = false;
+        }
+
         return SceneRequest::None;
     }
 
@@ -235,6 +272,79 @@ namespace DreamBox
         return m_tilemap.CollidesWithWall(
             m_player.GetCollisionBounds()
         );
+    }
+
+    bool GameScene::LoadLevel(int level)
+    {
+        const char* basePath = SDL_GetBasePath();
+
+        if (!basePath)
+        {
+            SDL_Log(
+                "Cannot load level: application path unavailable."
+            );
+            return false;
+        }
+
+        // Supports level_01.txt through level_09.txt
+        // for this first implementation.
+        const std::string mapPath =
+            std::string(basePath) +
+            "assets/maps/level_0" +
+            std::to_string(level) +
+            ".txt";
+
+        if (!m_tilemap.LoadFromFile(mapPath))
+        {
+            SDL_Log(
+                "Failed to load level %d",
+                level
+            );
+            return false;
+        }
+
+        // Move the player to the new level's spawn.
+        const auto spawn = m_tilemap.GetPlayerSpawn();
+
+        if (spawn.has_value())
+        {
+            const SDL_FRect hitbox =
+                m_player.GetCollisionBounds();
+
+            const float currentCenterX =
+                hitbox.x + hitbox.w / 2.0f;
+
+            const float currentCenterY =
+                hitbox.y + hitbox.h / 2.0f;
+
+            m_player.Move(
+                spawn->x - currentCenterX,
+                spawn->y - currentCenterY
+            );
+
+            SDL_Log(
+                "Player spawned at %.1f, %.1f",
+                spawn->x,
+                spawn->y
+            );
+        }
+        else
+        {
+            SDL_Log(
+                "Level %d has no spawn marker; "
+                "keeping current player position.",
+                level
+            );
+        }
+
+        m_currentLevel = level;
+
+        SDL_Log(
+            "Successfully loaded level %d",
+            m_currentLevel
+        );
+
+        return true;
     }
 
 

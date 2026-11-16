@@ -34,6 +34,11 @@ namespace DreamBox
         {
             return m_playerSpawn;
         }
+
+        std::optional<SDL_FRect> GetExitBounds() const
+        {
+            return m_exitBounds;
+        }
     private:
         enum class Tile : std::uint8_t
         {
@@ -50,5 +55,6 @@ namespace DreamBox
 
         std::unique_ptr<Texture> m_tileset;
         std::optional<SDL_FPoint> m_playerSpawn;
+        std::optional<SDL_FRect> m_exitBounds;
     };
 }
