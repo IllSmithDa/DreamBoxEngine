@@ -33,13 +33,66 @@ namespace DreamBox
             std::string(basePath) +
             "assets/maps/level_01.txt";
 
-        if (!m_tilemap.LoadFromFile(mapPath))
+
+        if (m_tilemap.LoadFromFile(mapPath))
         {
-            SDL_Log(
-                "Failed to load external map. "
-                "Using the default tilemap."
-            );
+            const auto spawn = m_tilemap.GetPlayerSpawn();
+        
+            if (spawn.has_value())
+            {
+                // Current collision rectangle.
+                const SDL_FRect hitbox =
+                    m_player.GetCollisionBounds();
+            
+                const float hitboxCenterX =
+                    hitbox.x + hitbox.w / 2.0f;
+            
+                const float hitboxCenterY =
+                    hitbox.y + hitbox.h / 2.0f;
+            
+                // Move the player's hitbox center
+                // to the center of the spawn tile.
+                const float moveX =
+                    spawn->x - hitboxCenterX;
+            
+                const float moveY =
+                    spawn->y - hitboxCenterY;
+            
+                m_player.Move(moveX, moveY);
+            
+                // Reject a spawn that intersects a wall.
+                if (m_tilemap.CollidesWithWall(
+                        m_player.GetCollisionBounds()))
+                {
+                    SDL_Log(
+                        "Player spawn intersects a wall. "
+                        "Using default position."
+                    );
+                
+                    m_player.Move(-moveX, -moveY);
+                }
+                else
+                {
+                    SDL_Log(
+                        "Player spawned at (%.1f, %.1f)",
+                        spawn->x,
+                        spawn->y
+                    );
+                }
+            }
+            else
+            {
+                SDL_Log(
+                    "Map has no player spawn. "
+                    "Using default position."
+                );
+            }
         }
+        else
+        {
+            SDL_Log("Using default tilemap layout");
+        }
+
 
         std::string texturePath =
             std::string(basePath) +

@@ -200,7 +200,8 @@ namespace DreamBox
         
             return false;
         }
-    
+        // spawn in player
+        std::optional<SDL_FPoint> newSpawn;
         // Temporary storage prevents a bad map
         // from partially replacing the current map.
         std::array<Tile, Columns * Rows> newTiles{};
@@ -242,7 +243,7 @@ namespace DreamBox
             for (int col = 0; col < Columns; ++col)
             {
                 Tile tile;
-            
+
                 switch (line[col])
                 {
                     case '.':
@@ -253,17 +254,36 @@ namespace DreamBox
                         tile = Tile::Wall;
                         break;
                 
+                    case 'P':
+                        // Prevent multiple spawn markers.
+                        if (newSpawn.has_value())
+                        {
+                            SDL_Log(
+                                "Map contains multiple player spawns."
+                            );
+                            return false;
+                        }
+                    
+                        // The spawn tile behaves like floor.
+                        tile = Tile::Floor;
+                    
+                        // Center of the marked tile.
+                        newSpawn = SDL_FPoint{
+                            (static_cast<float>(col) + 0.5f) * TileSize,
+                            (static_cast<float>(row) + 0.5f) * TileSize
+                        };
+                        break;
+                    
                     default:
                         SDL_Log(
-                            "Invalid tile '%c' at row %d, "
-                            "column %d.",
+                            "Invalid tile '%c' at row %d, column %d",
                             line[col],
                             row + 1,
                             col + 1
                         );
-                    
                         return false;
                 }
+
             
                 newTiles[row * Columns + col] = tile;
             }
@@ -282,7 +302,7 @@ namespace DreamBox
     
         // Only replace the current map after validation.
         m_tiles = newTiles;
-    
+        m_playerSpawn = newSpawn;
         SDL_Log(
             "Map loaded successfully: %s",
             filePath.c_str()
