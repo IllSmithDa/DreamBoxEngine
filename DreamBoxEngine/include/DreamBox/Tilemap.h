@@ -2,10 +2,12 @@
 #pragma once
 
 #include <SDL3/SDL_render.h>
-#include "DreamBox/Texture.h"
+#include <optional>
+#include <SDL3/SDL_rect.h>
 #include <memory>
 #include <array>
 #include <cstdint>
+#include "DreamBox/Texture.h"
 
 namespace DreamBox
 {
@@ -27,6 +29,16 @@ namespace DreamBox
         ) const;
 
         bool LoadFromFile(const std::string& filePath);
+
+        std::optional<SDL_FPoint> GetPlayerSpawn() const
+        {
+            return m_playerSpawn;
+        }
+
+        std::optional<SDL_FRect> GetExitBounds() const
+        {
+            return m_exitBounds;
+        }
     private:
         enum class Tile : std::uint8_t
         {
@@ -42,6 +54,7 @@ namespace DreamBox
         ) const;
 
         std::unique_ptr<Texture> m_tileset;
-        
+        std::optional<SDL_FPoint> m_playerSpawn;
+        std::optional<SDL_FRect> m_exitBounds;
     };
 }

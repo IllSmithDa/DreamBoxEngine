@@ -18,3 +18,4 @@ x64/
 *.exe
 *.pdb
 *.ilk
+/DreamBoxEngine/assets/maps/level_02.txt

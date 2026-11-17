@@ -114,6 +114,30 @@ namespace DreamBox
                 );
             }
         }
+
+
+        if (m_exitBounds.has_value())
+        {
+            SDL_SetRenderDrawColor(
+                renderer,
+                40, 230, 140, 255
+            );
+        
+            SDL_RenderRect(
+                renderer,
+                &m_exitBounds.value()
+            );
+        
+            SDL_FRect inner = m_exitBounds.value();
+        
+            inner.x += 6.0f;
+            inner.y += 6.0f;
+            inner.w -= 12.0f;
+            inner.h -= 12.0f;
+        
+            SDL_RenderRect(renderer, &inner);
+        }
+
     }
 
 
@@ -200,10 +224,13 @@ namespace DreamBox
         
             return false;
         }
-    
+        // spawn in player
+        std::optional<SDL_FPoint> newSpawn;
         // Temporary storage prevents a bad map
         // from partially replacing the current map.
         std::array<Tile, Columns * Rows> newTiles{};
+        // level exit point / level transition point
+        std::optional<SDL_FRect> newExitBounds;
     
         std::string line;
     
@@ -242,7 +269,7 @@ namespace DreamBox
             for (int col = 0; col < Columns; ++col)
             {
                 Tile tile;
-            
+
                 switch (line[col])
                 {
                     case '.':
@@ -252,18 +279,57 @@ namespace DreamBox
                     case '#':
                         tile = Tile::Wall;
                         break;
-                
+
+                    case 'E':
+                        if (newExitBounds.has_value())
+                        {
+                            SDL_Log(
+                                "Map contains multiple exit markers."
+                            );
+                            return false;
+                        }
+                    
+                        // Exits are walkable floor tiles.
+                        tile = Tile::Floor;
+                    
+                        newExitBounds = SDL_FRect{
+                            static_cast<float>(col) * TileSize,
+                            static_cast<float>(row) * TileSize,
+                            TileSize,
+                            TileSize
+                        };
+                        break;
+
+                    case 'P':
+                        // Prevent multiple spawn markers.
+                        if (newSpawn.has_value())
+                        {
+                            SDL_Log(
+                                "Map contains multiple player spawns."
+                            );
+                            return false;
+                        }
+                    
+                        // The spawn tile behaves like floor.
+                        tile = Tile::Floor;
+                    
+                        // Center of the marked tile.
+                        newSpawn = SDL_FPoint{
+                            (static_cast<float>(col) + 0.5f) * TileSize,
+                            (static_cast<float>(row) + 0.5f) * TileSize
+                        };
+                        break;
+                    
                     default:
                         SDL_Log(
-                            "Invalid tile '%c' at row %d, "
-                            "column %d.",
+                            "Invalid tile '%c' at row %d, column %d",
                             line[col],
                             row + 1,
                             col + 1
                         );
-                    
                         return false;
                 }
+
             
                 newTiles[row * Columns + col] = tile;
             }
@@ -282,7 +348,9 @@ namespace DreamBox
     
         // Only replace the current map after validation.
         m_tiles = newTiles;
-    
+        m_playerSpawn = newSpawn;
+        m_exitBounds = newExitBounds;
+
         SDL_Log(
             "Map loaded successfully: %s",
             filePath.c_str()

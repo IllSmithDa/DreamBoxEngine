@@ -52,6 +52,13 @@ namespace DreamBox
 
         // tilemap
         Tilemap m_tilemap;
+
+        int m_currentLevel = 1;
+
+        // Prevent repeated transitions while standing on an exit.
+        bool m_wasOnExit = false;
+            
+        bool LoadLevel(int level);
         
     };
 }
