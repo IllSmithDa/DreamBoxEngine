@@ -234,6 +234,9 @@ namespace DreamBox
     
         //check for chests
         std::vector<SDL_FRect> newChestBounds;
+        
+        // door check
+        std::vector<SDL_FRect> newDoorBounds;
 
         std::string line;
     
@@ -289,6 +292,21 @@ namespace DreamBox
                         
                             // Record the chest's position.
                             newChestBounds.push_back(
+                                SDL_FRect{
+                                    static_cast<float>(col) * TileSize,
+                                    static_cast<float>(row) * TileSize,
+                                    TileSize,
+                                    TileSize
+                                }
+                            );
+                        
+                            break;
+                        }
+                    case 'D':
+                        {
+                            tile = Tile::Floor;
+                        
+                            newDoorBounds.push_back(
                                 SDL_FRect{
                                     static_cast<float>(col) * TileSize,
                                     static_cast<float>(row) * TileSize,
@@ -370,6 +388,7 @@ namespace DreamBox
         m_playerSpawn = newSpawn;
         m_exitBounds = newExitBounds;
         m_chestBounds = std::move(newChestBounds);
+        m_doorBounds = std::move(newDoorBounds);
         SDL_Log(
             "Map loaded successfully: %s",
             filePath.c_str()

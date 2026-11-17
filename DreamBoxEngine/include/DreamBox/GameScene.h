@@ -74,5 +74,15 @@ namespace DreamBox
             const SDL_FRect& chestBounds
         ) const;
         
+        // door 
+        struct Door
+        {
+            SDL_FRect bounds{};
+            bool open = false;
+        };
+        std::vector<Door> m_doors;
+        bool IsPlayerNearDoor(
+            const SDL_FRect& doorBounds
+        ) const;
     };
 }

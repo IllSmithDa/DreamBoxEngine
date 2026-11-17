@@ -44,6 +44,10 @@ namespace DreamBox
         {
             return m_chestBounds;
         }
+        const std::vector<SDL_FRect>& GetDoorBounds() const
+        {
+            return m_doorBounds;
+        }
     private:
         enum class Tile : std::uint8_t
         {
@@ -62,5 +66,6 @@ namespace DreamBox
         std::optional<SDL_FPoint> m_playerSpawn;
         std::optional<SDL_FRect> m_exitBounds;
         std::vector<SDL_FRect> m_chestBounds;
+        std::vector<SDL_FRect> m_doorBounds;
     };
 }
