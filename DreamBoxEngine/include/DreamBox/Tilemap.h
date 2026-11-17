@@ -7,6 +7,7 @@
 #include <memory>
 #include <array>
 #include <cstdint>
+#include <vector>
 #include "DreamBox/Texture.h"
 
 namespace DreamBox
@@ -39,6 +40,10 @@ namespace DreamBox
         {
             return m_exitBounds;
         }
+        const std::vector<SDL_FRect>& GetChestBounds() const
+        {
+            return m_chestBounds;
+        }
     private:
         enum class Tile : std::uint8_t
         {
@@ -56,5 +61,6 @@ namespace DreamBox
         std::unique_ptr<Texture> m_tileset;
         std::optional<SDL_FPoint> m_playerSpawn;
         std::optional<SDL_FRect> m_exitBounds;
+        std::vector<SDL_FRect> m_chestBounds;
     };
 }

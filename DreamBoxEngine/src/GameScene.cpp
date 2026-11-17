@@ -179,7 +179,7 @@ namespace DreamBox
 
         // Check whether the player has entered an exit tile.
         const auto exitBounds = m_tilemap.GetExitBounds();
-            
+
         bool onExit = false;
 
         if (exitBounds.has_value())
@@ -205,6 +205,72 @@ namespace DreamBox
             m_wasOnExit = false;
         }
 
+        // ----------------------------------
+        // Interactable objects
+        // ----------------------------------
+
+        const bool interactPressed =
+            input.IsKeyPressed(SDL_SCANCODE_E);
+
+        // Only interact once per key press.
+        if (interactPressed && !m_wasInteractPressed)
+        {
+            Chest* nearestChest = nullptr;
+        
+            constexpr float interactionRange = 70.0f;
+        
+            float nearestDistanceSquared =
+                interactionRange * interactionRange;
+        
+            const SDL_FRect playerBounds =
+                m_player.GetCollisionBounds();
+        
+            const float playerCenterX =
+                playerBounds.x + playerBounds.w / 2.0f;
+        
+            const float playerCenterY =
+                playerBounds.y + playerBounds.h / 2.0f;
+        
+            // Find the nearest unopened chest.
+            for (Chest& chest : m_chests)
+            {
+                if (chest.opened)
+                {
+                    continue;
+                }
+            
+                const float chestCenterX =
+                    chest.bounds.x + chest.bounds.w / 2.0f;
+            
+                const float chestCenterY =
+                    chest.bounds.y + chest.bounds.h / 2.0f;
+            
+                const float dx =
+                    playerCenterX - chestCenterX;
+            
+                const float dy =
+                    playerCenterY - chestCenterY;
+            
+                const float distanceSquared =
+                    dx * dx + dy * dy;
+            
+                if (distanceSquared <= nearestDistanceSquared)
+                {
+                    nearestDistanceSquared = distanceSquared;
+                    nearestChest = &chest;
+                }
+            }
+        
+            // Open the selected chest.
+            if (nearestChest)
+            {
+                nearestChest->opened = true;
+            
+                SDL_Log("Treasure chest opened!");
+            }
+        }
+
+        m_wasInteractPressed = interactPressed;
         return SceneRequest::None;
     }
 
@@ -216,6 +282,71 @@ namespace DreamBox
         
         // tile map rendering
         m_tilemap.Render(renderer);
+
+        // chest rendering
+        // ----------------------------------
+        // Render treasure chests
+        // ----------------------------------
+
+        for (const Chest& chest : m_chests)
+        {
+            // Add padding around the chest graphic.
+            SDL_FRect chestVisual = chest.bounds;
+        
+            chestVisual.x += 5.0f;
+            chestVisual.y += 8.0f;
+        
+            chestVisual.w -= 10.0f;
+            chestVisual.h -= 12.0f;
+        
+            if (chest.opened)
+            {
+                // Opened chest: darker brown.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    95, 65, 40, 255
+                );
+            }
+            else
+            {
+                // Closed chest: brighter brown.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    165, 100, 45, 255
+                );
+            }
+        
+            SDL_RenderFillRect(
+                renderer,
+                &chestVisual
+            );
+        
+            // Draw chest border.
+            SDL_SetRenderDrawColor(
+                renderer,
+                40, 25, 15, 255
+            );
+        
+            SDL_RenderRect(
+                renderer,
+                &chestVisual
+            );
+        
+            // Highlight unopened chests when nearby.
+            if (!chest.opened &&
+                IsPlayerNearChest(chest.bounds))
+            {
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    255, 220, 70, 255
+                );
+            
+                SDL_RenderRect(
+                    renderer,
+                    &chest.bounds
+                );
+            }
+        }
 
         const SDL_FRect sourceFrame = m_playerAnimator.GetSourceRect();
 
@@ -269,9 +400,28 @@ namespace DreamBox
     
     bool GameScene::PlayerCollidesWithWall() const
     {
-        return m_tilemap.CollidesWithWall(
-            m_player.GetCollisionBounds()
-        );
+        const SDL_FRect playerHitbox =
+            m_player.GetCollisionBounds();
+    
+        // Check tilemap walls.
+        if (m_tilemap.CollidesWithWall(playerHitbox))
+        {
+            return true;
+        }
+    
+        // Check treasure chest collisions.
+        for (const Chest& chest : m_chests)
+        {
+            if (Collision::Intersects(
+                playerHitbox,
+                chest.bounds
+            ))
+            {
+                return true;
+            }
+        }
+    
+        return false;
     }
 
     bool GameScene::LoadLevel(int level)
@@ -301,6 +451,23 @@ namespace DreamBox
                 level
             );
             return false;
+        }
+
+        // load up chests 
+
+        // Clear chests from the previous level.
+        m_chests.clear();
+
+        // Create chests from the new map.
+        for (const SDL_FRect& bounds :
+             m_tilemap.GetChestBounds())
+        {
+            m_chests.push_back(
+                Chest{
+                    bounds,
+                    false
+                }
+            );
         }
 
         // Move the player to the new level's spawn.
@@ -347,5 +514,39 @@ namespace DreamBox
         return true;
     }
 
+    bool GameScene::IsPlayerNearChest(
+        const SDL_FRect& chestBounds
+    ) const
+    {
+        const SDL_FRect playerBounds =
+            m_player.GetCollisionBounds();
+
+        // Player hitbox center.
+        const float playerCenterX =
+            playerBounds.x + playerBounds.w / 2.0f;
+
+        const float playerCenterY =
+            playerBounds.y + playerBounds.h / 2.0f;
+
+        // Chest center.
+        const float chestCenterX =
+            chestBounds.x + chestBounds.w / 2.0f;
+
+        const float chestCenterY =
+            chestBounds.y + chestBounds.h / 2.0f;
+
+        const float dx =
+            playerCenterX - chestCenterX;
+
+        const float dy =
+            playerCenterY - chestCenterY;
+
+        // Interaction range in logical world units.
+        constexpr float interactionRange = 70.0f;
+
+        // Compare squared distances.
+        return dx * dx + dy * dy <=
+            interactionRange * interactionRange;
+    }
 
 }

@@ -232,6 +232,9 @@ namespace DreamBox
         // level exit point / level transition point
         std::optional<SDL_FRect> newExitBounds;
     
+        //check for chests
+        std::vector<SDL_FRect> newChestBounds;
+
         std::string line;
     
         for (int row = 0; row < Rows; ++row)
@@ -279,7 +282,23 @@ namespace DreamBox
                     case '#':
                         tile = Tile::Wall;
                         break;
-
+                    case 'C':
+                        {
+                            // Chest locations behave like floor tiles.
+                            tile = Tile::Floor;
+                        
+                            // Record the chest's position.
+                            newChestBounds.push_back(
+                                SDL_FRect{
+                                    static_cast<float>(col) * TileSize,
+                                    static_cast<float>(row) * TileSize,
+                                    TileSize,
+                                    TileSize
+                                }
+                            );
+                        
+                            break;
+                        }
                     case 'E':
                         if (newExitBounds.has_value())
                         {
@@ -350,7 +369,7 @@ namespace DreamBox
         m_tiles = newTiles;
         m_playerSpawn = newSpawn;
         m_exitBounds = newExitBounds;
-
+        m_chestBounds = std::move(newChestBounds);
         SDL_Log(
             "Map loaded successfully: %s",
             filePath.c_str()

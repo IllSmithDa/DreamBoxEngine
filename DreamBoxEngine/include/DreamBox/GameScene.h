@@ -57,8 +57,22 @@ namespace DreamBox
 
         // Prevent repeated transitions while standing on an exit.
         bool m_wasOnExit = false;
-            
+
         bool LoadLevel(int level);
+
+        // chest methods and var
+        struct Chest
+        {
+            SDL_FRect bounds{};
+            bool opened = false;
+        };
+        std::vector<Chest> m_chests;
+
+        bool m_wasInteractPressed = false;
+
+        bool IsPlayerNearChest(
+            const SDL_FRect& chestBounds
+        ) const;
         
     };
 }
