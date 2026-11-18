@@ -63,6 +63,20 @@ namespace DreamBox
         const SDL_FRect& playerHitbox
     )
     {
+
+        // Temporary input diagnostics.
+        if (interactPressed)
+        {
+            SDL_Log(
+                "E detected: current=1, previous=%d",
+                m_wasInteractPressed ? 1 : 0
+            );
+        }
+        else if (m_wasInteractPressed)
+        {
+            SDL_Log("E released: resetting interaction state");
+        }
+
         const bool newPress =
             interactPressed && !m_wasInteractPressed;
     
