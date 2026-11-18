@@ -142,6 +142,14 @@ namespace DreamBox
             m_wasOnExit = false;
         }
     
+        // ----------------------------------
+        // Interactable objects
+        // ----------------------------------
+        
+        m_interactions.Update(
+            input.IsKeyPressed(SDL_SCANCODE_E),
+            m_player.GetCollisionBounds()
+        );
         return SceneRequest::None;
     }
 
