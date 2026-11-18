@@ -57,7 +57,7 @@ namespace DreamBox
         return DistanceSquared(player, object) <=
             interactionRange * interactionRange;
     }
-
+    
     void InteractionSystem::Update(
         bool interactPressed,
         const SDL_FRect& playerHitbox
@@ -65,83 +65,124 @@ namespace DreamBox
     {
         const bool newPress =
             interactPressed && !m_wasInteractPressed;
-
+    
         m_wasInteractPressed = interactPressed;
-
+    
         if (!newPress)
         {
             return;
         }
-
+      
+        SDL_Log(
+            "Interaction requested: %zu chests, %zu doors",
+            m_chests.size(),
+            m_doors.size()
+        );
+      
         constexpr float interactionRange = 70.0f;
-        const float maxDistanceSquared =
+      
+        float nearestDistanceSquared =
             interactionRange * interactionRange;
-
-        // First, find the closest unopened chest.
+      
         Chest* nearestChest = nullptr;
-        float nearestDistance = maxDistanceSquared;
-
+        Door* nearestDoor = nullptr;
+      
+        // ----------------------------------
+        // Find nearest unopened chest
+        // ----------------------------------
+      
         for (Chest& chest : m_chests)
         {
             if (chest.opened)
             {
                 continue;
             }
-
-            const float distance =
-                DistanceSquared(playerHitbox, chest.bounds);
-
-            if (distance <= nearestDistance)
+          
+            const float distanceSquared =
+                DistanceSquared(
+                    playerHitbox,
+                    chest.bounds
+                );
+              
+            if (distanceSquared <= nearestDistanceSquared)
             {
-                nearestDistance = distance;
+                nearestDistanceSquared = distanceSquared;
+            
                 nearestChest = &chest;
+                nearestDoor = nullptr;
             }
         }
-
+      
+        // ----------------------------------
+        // Find nearest door
+        // ----------------------------------
+      
+        for (Door& door : m_doors)
+        {
+            const float distanceSquared =
+                DistanceSquared(
+                    playerHitbox,
+                    door.bounds
+                );
+              
+            // Log the distance for debugging.
+            SDL_Log(
+                "Door distance: %.1f units",
+                static_cast<float>(
+                    std::sqrt(distanceSquared)
+                )
+            );
+          
+            if (distanceSquared < nearestDistanceSquared)
+            {
+                nearestDistanceSquared = distanceSquared;
+            
+                nearestDoor = &door;
+                nearestChest = nullptr;
+            }
+        }
+      
+        // ----------------------------------
+        // Interact with nearest object
+        // ----------------------------------
+      
         if (nearestChest)
         {
             nearestChest->opened = true;
+        
             SDL_Log("Treasure chest opened!");
             return;
         }
-
-        // Otherwise, find the closest door.
-        Door* nearestDoor = nullptr;
-        nearestDistance = maxDistanceSquared;
-
-        for (Door& door : m_doors)
+      
+        if (nearestDoor)
         {
-            const float distance =
-                DistanceSquared(playerHitbox, door.bounds);
-
-            if (distance <= nearestDistance)
+            if (!nearestDoor->open)
             {
-                nearestDistance = distance;
-                nearestDoor = &door;
+                nearestDoor->open = true;
+            
+                SDL_Log("Door opened");
             }
-        }
-
-        if (!nearestDoor)
-        {
+            else if (!Collision::Intersects(
+                         playerHitbox,
+                         nearestDoor->bounds))
+            {
+                nearestDoor->open = false;
+            
+                SDL_Log("Door closed");
+            }
+            else
+            {
+                SDL_Log(
+                    "Cannot close door: player is inside"
+                );
+            }
+          
             return;
         }
-
-        if (!nearestDoor->open)
-        {
-            nearestDoor->open = true;
-            SDL_Log("Door opened");
-        }
-        else if (!Collision::Intersects(
-                     playerHitbox,
-                     nearestDoor->bounds))
-        {
-            nearestDoor->open = false;
-            SDL_Log("Door closed");
-        }
-        else
-        {
-            SDL_Log("Cannot close door: player is inside");
-        }
+      
+        SDL_Log(
+            "No interactable object within range"
+        );
     }
 
     bool InteractionSystem::CollidesWithSolid(
