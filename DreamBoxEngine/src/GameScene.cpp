@@ -118,70 +118,75 @@ namespace DreamBox
     }
 
 
+
     SceneRequest GameScene::Update(
         const Input& input,
         float deltaTime
     )
     {
+        // Return to Main Menu.
         if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
         {
-                m_showCollisionBounds = !m_showCollisionBounds;
-
             return SceneRequest::MainMenu;
         }
-
-        const SDL_FRect previousBounds = m_player.GetBounds();
-
+    
+        // ----------------------------------
+        // Player movement and collision
+        // ----------------------------------
+    
+        const SDL_FRect previousBounds =
+            m_player.GetBounds();
+    
         SDL_FPoint movement =
             m_player.GetMovement(
                 input,
                 deltaTime
             );
         
-        m_player.Move(
-            movement.x,
-            0.0f
-        );
+        // Horizontal movement.
+        m_player.Move(movement.x, 0.0f);
+        
+        if (PlayerCollidesWithWall())
+        {
+            m_player.Move(-movement.x, 0.0f);
+        }
+    
+        // Vertical movement.
+        m_player.Move(0.0f, movement.y);
     
         if (PlayerCollidesWithWall())
         {
-            m_player.Move(
-                -movement.x,
-                0.0f
-            );
+            m_player.Move(0.0f, -movement.y);
         }
     
-        m_player.Move(
-            0.0f,
-            movement.y
-        );
+        // ----------------------------------
+        // Player animation
+        // ----------------------------------
     
-        if (PlayerCollidesWithWall())
-        {
-            m_player.Move(
-                0.0f,
-                -movement.y
-            );
-        }
-
-        const SDL_FRect currentBounds = m_player.GetBounds();
-
-        const float movementX = currentBounds.x - previousBounds.x;
-
-        const float movementY = currentBounds.y - previousBounds.y;
-
+        const SDL_FRect currentBounds =
+            m_player.GetBounds();
+    
+        const float movementX =
+            currentBounds.x - previousBounds.x;
+    
+        const float movementY =
+            currentBounds.y - previousBounds.y;
+    
         m_playerAnimator.Update(
             movementX,
             movementY,
             deltaTime
         );
-        
-
-        // Check whether the player has entered an exit tile.
-        const auto exitBounds = m_tilemap.GetExitBounds();
-
+    
+        // ----------------------------------
+        // Level exit detection
+        // ----------------------------------
+    
+        const auto exitBounds =
+            m_tilemap.GetExitBounds();
+    
         bool onExit = false;
-
+    
         if (exitBounds.has_value())
         {
             onExit = Collision::Intersects(
@@ -189,12 +194,11 @@ namespace DreamBox
                 exitBounds.value()
             );
         }
-
+    
         if (onExit && !m_wasOnExit)
         {
             m_wasOnExit = true;
         
-            // Two-level prototype: toggle between maps.
             const int nextLevel =
                 (m_currentLevel == 1) ? 2 : 1;
         
@@ -204,22 +208,22 @@ namespace DreamBox
         {
             m_wasOnExit = false;
         }
-
+    
         // ----------------------------------
         // Interactable objects
         // ----------------------------------
-
+    
         const bool interactPressed =
             input.IsKeyPressed(SDL_SCANCODE_E);
-
-        // Only interact once per key press.
-        if (interactPressed && !m_wasInteractPressed)
+    
+        const bool newInteractPress =
+            interactPressed && !m_wasInteractPressed;
+    
+        if (newInteractPress)
         {
-            Chest* nearestChest = nullptr;
-        
             constexpr float interactionRange = 70.0f;
         
-            float nearestDistanceSquared =
+            const float maxDistanceSquared =
                 interactionRange * interactionRange;
         
             const SDL_FRect playerBounds =
@@ -231,7 +235,15 @@ namespace DreamBox
             const float playerCenterY =
                 playerBounds.y + playerBounds.h / 2.0f;
         
-            // Find the nearest unopened chest.
+            // ----------------------------------
+            // Find nearest unopened chest
+            // ----------------------------------
+        
+            Chest* nearestChest = nullptr;
+        
+            float nearestChestDistance =
+                maxDistanceSquared;
+        
             for (Chest& chest : m_chests)
             {
                 if (chest.opened)
@@ -254,88 +266,84 @@ namespace DreamBox
                 const float distanceSquared =
                     dx * dx + dy * dy;
             
-                if (distanceSquared <= nearestDistanceSquared)
+                if (distanceSquared <= nearestChestDistance)
                 {
-                    nearestDistanceSquared = distanceSquared;
+                    nearestChestDistance = distanceSquared;
                     nearestChest = &chest;
                 }
             }
         
-            // Open the selected chest.
             if (nearestChest)
             {
                 nearestChest->opened = true;
             
                 SDL_Log("Treasure chest opened!");
             }
-        }
-
-        m_wasInteractPressed = interactPressed;
-
-        // If no chest was opened, try interacting with a door.
-        if (interactPressed && !m_wasInteractPressed)
-        {
-            Door* nearestDoor = nullptr;
-        
-            constexpr float interactionRange = 70.0f;
-            float nearestDistanceSquared =
-                interactionRange * interactionRange;
-        
-            const SDL_FRect playerBounds =
-                m_player.GetCollisionBounds();
-        
-            const float playerCenterX =
-                playerBounds.x + playerBounds.w / 2.0f;
-        
-            const float playerCenterY =
-                playerBounds.y + playerBounds.h / 2.0f;
-        
-            for (Door& door : m_doors)
+            else
             {
-                const float doorCenterX =
-                    door.bounds.x + door.bounds.w / 2.0f;
+                // ----------------------------------
+                // Find nearest door
+                // ----------------------------------
             
-                const float doorCenterY =
-                    door.bounds.y + door.bounds.h / 2.0f;
+                Door* nearestDoor = nullptr;
             
-                const float dx =
-                    playerCenterX - doorCenterX;
+                float nearestDoorDistance =
+                    maxDistanceSquared;
             
-                const float dy =
-                    playerCenterY - doorCenterY;
-            
-                const float distanceSquared =
-                    dx * dx + dy * dy;
-            
-                if (distanceSquared <= nearestDistanceSquared)
+                for (Door& door : m_doors)
                 {
-                    nearestDistanceSquared = distanceSquared;
-                    nearestDoor = &door;
-                }
-            }
-        
-            if (nearestDoor)
-            {
-                if (nearestDoor->open)
-                {
-                    // Prevent closing the door on top of the player.
-                    if (!Collision::Intersects(
-                            m_player.GetCollisionBounds(),
-                            nearestDoor->bounds))
+                    const float doorCenterX =
+                        door.bounds.x + door.bounds.w / 2.0f;
+                
+                    const float doorCenterY =
+                        door.bounds.y + door.bounds.h / 2.0f;
+                
+                    const float dx =
+                        playerCenterX - doorCenterX;
+                
+                    const float dy =
+                        playerCenterY - doorCenterY;
+                
+                    const float distanceSquared =
+                        dx * dx + dy * dy;
+                
+                    if (distanceSquared <= nearestDoorDistance)
                     {
-                        nearestDoor->open = false;
-                        SDL_Log("Door closed");
+                        nearestDoorDistance = distanceSquared;
+                        nearestDoor = &door;
                     }
                 }
-                else
+            
+                if (nearestDoor)
                 {
-                    nearestDoor->open = true;
-                    SDL_Log("Door opened");
+                    if (nearestDoor->open)
+                    {
+                        // Don't close the door on the player.
+                        if (!Collision::Intersects(
+                                playerBounds,
+                                nearestDoor->bounds))
+                        {
+                            nearestDoor->open = false;
+                        
+                            SDL_Log("Door closed");
+                        }
+                    }
+                    else
+                    {
+                        nearestDoor->open = true;
+                    
+                        SDL_Log("Door opened");
+                    }
                 }
             }
         }
+    
+        // Update key state AFTER all interactions.
+        m_wasInteractPressed = interactPressed;
+    
         return SceneRequest::None;
     }
+
 
 
     void GameScene::Render(
@@ -458,7 +466,7 @@ namespace DreamBox
             );
         
             // Highlight if nearby.
-            if (IsPlayerNearDoor(door.bounds))
+            if (!door.open && IsPlayerNearDoor(door.bounds))
             {
                 SDL_SetRenderDrawColor(
                     renderer,
