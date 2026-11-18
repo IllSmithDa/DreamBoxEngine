@@ -234,108 +234,12 @@ namespace DreamBox
         
             const float playerCenterY =
                 playerBounds.y + playerBounds.h / 2.0f;
+            
+            m_interactions.Update(
+                input.IsKeyPressed(SDL_SCANCODE_E),
+                m_player.GetCollisionBounds()
+            );
         
-            // ----------------------------------
-            // Find nearest unopened chest
-            // ----------------------------------
-        
-            Chest* nearestChest = nullptr;
-        
-            float nearestChestDistance =
-                maxDistanceSquared;
-        
-            for (Chest& chest : m_chests)
-            {
-                if (chest.opened)
-                {
-                    continue;
-                }
-            
-                const float chestCenterX =
-                    chest.bounds.x + chest.bounds.w / 2.0f;
-            
-                const float chestCenterY =
-                    chest.bounds.y + chest.bounds.h / 2.0f;
-            
-                const float dx =
-                    playerCenterX - chestCenterX;
-            
-                const float dy =
-                    playerCenterY - chestCenterY;
-            
-                const float distanceSquared =
-                    dx * dx + dy * dy;
-            
-                if (distanceSquared <= nearestChestDistance)
-                {
-                    nearestChestDistance = distanceSquared;
-                    nearestChest = &chest;
-                }
-            }
-        
-            if (nearestChest)
-            {
-                nearestChest->opened = true;
-            
-                SDL_Log("Treasure chest opened!");
-            }
-            else
-            {
-                // ----------------------------------
-                // Find nearest door
-                // ----------------------------------
-            
-                Door* nearestDoor = nullptr;
-            
-                float nearestDoorDistance =
-                    maxDistanceSquared;
-            
-                for (Door& door : m_doors)
-                {
-                    const float doorCenterX =
-                        door.bounds.x + door.bounds.w / 2.0f;
-                
-                    const float doorCenterY =
-                        door.bounds.y + door.bounds.h / 2.0f;
-                
-                    const float dx =
-                        playerCenterX - doorCenterX;
-                
-                    const float dy =
-                        playerCenterY - doorCenterY;
-                
-                    const float distanceSquared =
-                        dx * dx + dy * dy;
-                
-                    if (distanceSquared <= nearestDoorDistance)
-                    {
-                        nearestDoorDistance = distanceSquared;
-                        nearestDoor = &door;
-                    }
-                }
-            
-                if (nearestDoor)
-                {
-                    if (nearestDoor->open)
-                    {
-                        // Don't close the door on the player.
-                        if (!Collision::Intersects(
-                                playerBounds,
-                                nearestDoor->bounds))
-                        {
-                            nearestDoor->open = false;
-                        
-                            SDL_Log("Door closed");
-                        }
-                    }
-                    else
-                    {
-                        nearestDoor->open = true;
-                    
-                        SDL_Log("Door opened");
-                    }
-                }
-            }
         }
     
         // Update key state AFTER all interactions.
@@ -354,131 +258,10 @@ namespace DreamBox
         // tile map rendering
         m_tilemap.Render(renderer);
 
-        // chest rendering
-        // ----------------------------------
-        // Render treasure chests
-        // ----------------------------------
-
-        for (const Chest& chest : m_chests)
-        {
-            // Add padding around the chest graphic.
-            SDL_FRect chestVisual = chest.bounds;
-        
-            chestVisual.x += 5.0f;
-            chestVisual.y += 8.0f;
-        
-            chestVisual.w -= 10.0f;
-            chestVisual.h -= 12.0f;
-        
-            if (chest.opened)
-            {
-                // Opened chest: darker brown.
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    95, 65, 40, 255
-                );
-            }
-            else
-            {
-                // Closed chest: brighter brown.
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    165, 100, 45, 255
-                );
-            }
-        
-            SDL_RenderFillRect(
-                renderer,
-                &chestVisual
-            );
-        
-            // Draw chest border.
-            SDL_SetRenderDrawColor(
-                renderer,
-                40, 25, 15, 255
-            );
-        
-            SDL_RenderRect(
-                renderer,
-                &chestVisual
-            );
-        
-            // Highlight unopened chests when nearby.
-            if (!chest.opened &&
-                IsPlayerNearChest(chest.bounds))
-            {
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    255, 220, 70, 255
-                );
-            
-                SDL_RenderRect(
-                    renderer,
-                    &chest.bounds
-                );
-            }
-        }
-
-
-        // ----------------------------------
-        // Render doors
-        // ----------------------------------
-
-        for (const Door& door : m_doors)
-        {
-            SDL_FRect doorVisual = door.bounds;
-        
-            doorVisual.x += 6.0f;
-            doorVisual.y += 2.0f;
-            doorVisual.w -= 12.0f;
-            doorVisual.h -= 4.0f;
-        
-            if (door.open)
-            {
-                // Open door: darker and smaller/off to the side
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    90, 60, 35, 255
-                );
-            }
-            else
-            {
-                // Closed door: brighter brown
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    145, 90, 45, 255
-                );
-            }
-        
-            SDL_RenderFillRect(
-                renderer,
-                &doorVisual
-            );
-        
-            SDL_SetRenderDrawColor(
-                renderer,
-                40, 25, 15, 255
-            );
-        
-            SDL_RenderRect(
-                renderer,
-                &doorVisual
-            );
-        
-            // Highlight if nearby.
-            if (!door.open && IsPlayerNearDoor(door.bounds))
-            {
-                SDL_SetRenderDrawColor(
-                    renderer,
-                    255, 220, 70, 255
-                );
-            
-                SDL_RenderRect(
-                    renderer,
-                    &door.bounds
-                );
-            }
-        }
+        m_interactions.Render(
+            renderer,
+            m_player.GetCollisionBounds()
+        );
 
 
         const SDL_FRect sourceFrame = m_playerAnimator.GetSourceRect();
@@ -533,39 +316,11 @@ namespace DreamBox
     
     bool GameScene::PlayerCollidesWithWall() const
     {
-        const SDL_FRect playerHitbox =
+        const SDL_FRect hitbox =
             m_player.GetCollisionBounds();
-
-        // Tilemap walls.
-        if (m_tilemap.CollidesWithWall(playerHitbox))
-        {
-            return true;
-        }
-
-        // Treasure chests.
-        for (const Chest& chest : m_chests)
-        {
-            if (Collision::Intersects(
-                    playerHitbox,
-                    chest.bounds))
-            {
-                return true;
-            }
-        }
-
-        // Closed doors only.
-        for (const Door& door : m_doors)
-        {
-            if (!door.open &&
-                Collision::Intersects(
-                    playerHitbox,
-                    door.bounds))
-            {
-                return true;
-            }
-        }
-
-        return false;
+    
+        return m_tilemap.CollidesWithWall(hitbox) ||
+               m_interactions.CollidesWithSolid(hitbox);
     }
 
     bool GameScene::LoadLevel(int level)
@@ -597,44 +352,11 @@ namespace DreamBox
             return false;
         }
 
-        m_chests.clear();
-
-        // door rendering 
-        for (const SDL_FRect& bounds : m_tilemap.GetChestBounds())
-        {
-            m_chests.push_back(
-                Chest{
-                    bounds,
-                    false
-                }
-            );
-        }
-
-        m_doors.clear();
-        for (const SDL_FRect& bounds : m_tilemap.GetDoorBounds())
-        {
-            m_doors.push_back(
-                Door{
-                    bounds,
-                    false
-                }
-            );
-        }
-
-        // Clear chests from the previous level.
-        m_chests.clear();
-
-        // Create chests from the new map.
-        for (const SDL_FRect& bounds :
-             m_tilemap.GetChestBounds())
-        {
-            m_chests.push_back(
-                Chest{
-                    bounds,
-                    false
-                }
-            );
-        }
+        // use interactions tilemaps door and door rendering
+        m_interactions.Initialize(
+            m_tilemap.GetChestBounds(),
+            m_tilemap.GetDoorBounds()
+        );
 
         // Move the player to the new level's spawn.
         const auto spawn = m_tilemap.GetPlayerSpawn();

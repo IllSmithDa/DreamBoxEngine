@@ -8,6 +8,7 @@
 #include "DreamBox/Texture.h"
 #include "DreamBox/SpriteAnimator.h"
 #include "DreamBox/Tilemap.h"
+#include "DreamBox/InteractionSystem.h"
 
 namespace DreamBox
 {
@@ -61,28 +62,9 @@ namespace DreamBox
         bool LoadLevel(int level);
 
         // chest methods and var
-        struct Chest
-        {
-            SDL_FRect bounds{};
-            bool opened = false;
-        };
-        std::vector<Chest> m_chests;
 
         bool m_wasInteractPressed = false;
 
-        bool IsPlayerNearChest(
-            const SDL_FRect& chestBounds
-        ) const;
-        
-        // door 
-        struct Door
-        {
-            SDL_FRect bounds{};
-            bool open = false;
-        };
-        std::vector<Door> m_doors;
-        bool IsPlayerNearDoor(
-            const SDL_FRect& doorBounds
-        ) const;
+        InteractionSystem m_interactions;
     };
 }

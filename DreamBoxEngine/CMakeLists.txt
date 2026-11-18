@@ -94,6 +94,7 @@ add_executable(
     src/Texture.cpp
     src/SpriteAnimator.cpp
     src/Tilemap.cpp
+    src/InteractionSystem.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -110,6 +111,7 @@ add_executable(
     include/DreamBox/Texture.h
     include/DreamBox/SpriteAnimator.h
     include/DreamBox/Tilemap.h
+    include/DreamBox/InteractionSystem.h
 )   
 
 target_include_directories(
