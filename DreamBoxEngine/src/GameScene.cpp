@@ -318,7 +318,7 @@ namespace DreamBox
     {
         const SDL_FRect hitbox =
             m_player.GetCollisionBounds();
-    
+
         return m_tilemap.CollidesWithWall(hitbox) ||
                m_interactions.CollidesWithSolid(hitbox);
     }
@@ -400,72 +400,6 @@ namespace DreamBox
         );
 
         return true;
-    }
-
-    bool GameScene::IsPlayerNearChest(
-        const SDL_FRect& chestBounds
-    ) const
-    {
-        const SDL_FRect playerBounds =
-            m_player.GetCollisionBounds();
-
-        // Player hitbox center.
-        const float playerCenterX =
-            playerBounds.x + playerBounds.w / 2.0f;
-
-        const float playerCenterY =
-            playerBounds.y + playerBounds.h / 2.0f;
-
-        // Chest center.
-        const float chestCenterX =
-            chestBounds.x + chestBounds.w / 2.0f;
-
-        const float chestCenterY =
-            chestBounds.y + chestBounds.h / 2.0f;
-
-        const float dx =
-            playerCenterX - chestCenterX;
-
-        const float dy =
-            playerCenterY - chestCenterY;
-
-        // Interaction range in logical world units.
-        constexpr float interactionRange = 70.0f;
-
-        // Compare squared distances.
-        return dx * dx + dy * dy <=
-            interactionRange * interactionRange;
-    }
-
-    bool GameScene::IsPlayerNearDoor(
-        const SDL_FRect& doorBounds
-    ) const
-    {
-        const SDL_FRect playerBounds =
-            m_player.GetCollisionBounds();
-
-        const float playerCenterX =
-            playerBounds.x + playerBounds.w / 2.0f;
-
-        const float playerCenterY =
-            playerBounds.y + playerBounds.h / 2.0f;
-
-        const float doorCenterX =
-            doorBounds.x + doorBounds.w / 2.0f;
-
-        const float doorCenterY =
-            doorBounds.y + doorBounds.h / 2.0f;
-
-        const float dx =
-            playerCenterX - doorCenterX;
-
-        const float dy =
-            playerCenterY - doorCenterY;
-
-        constexpr float interactionRange = 70.0f;
-
-        return dx * dx + dy * dy <=
-            interactionRange * interactionRange;
     }
 
 }
