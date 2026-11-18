@@ -1,7 +1,7 @@
 
 #include "DreamBox/InteractionSystem.h"
 #include "DreamBox/Collision.h"
-
+#include <cmath>
 #include <SDL3/SDL_log.h>
 
 namespace DreamBox
