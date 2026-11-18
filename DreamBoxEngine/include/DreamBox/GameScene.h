@@ -61,10 +61,6 @@ namespace DreamBox
 
         bool LoadLevel(int level);
 
-        // chest methods and var
-
-        bool m_wasInteractPressed = false;
-
         InteractionSystem m_interactions;
     };
 }

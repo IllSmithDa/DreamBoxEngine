@@ -142,42 +142,6 @@ namespace DreamBox
             m_wasOnExit = false;
         }
     
-        // ----------------------------------
-        // Interactable objects
-        // ----------------------------------
-    
-        const bool interactPressed =
-            input.IsKeyPressed(SDL_SCANCODE_E);
-    
-        const bool newInteractPress =
-            interactPressed && !m_wasInteractPressed;
-    
-        if (newInteractPress)
-        {
-            constexpr float interactionRange = 70.0f;
-        
-            const float maxDistanceSquared =
-                interactionRange * interactionRange;
-        
-            const SDL_FRect playerBounds =
-                m_player.GetCollisionBounds();
-        
-            const float playerCenterX =
-                playerBounds.x + playerBounds.w / 2.0f;
-        
-            const float playerCenterY =
-                playerBounds.y + playerBounds.h / 2.0f;
-            
-            m_interactions.Update(
-                input.IsKeyPressed(SDL_SCANCODE_E),
-                m_player.GetCollisionBounds()
-            );
-        
-        }
-    
-        // Update key state AFTER all interactions.
-        m_wasInteractPressed = interactPressed;
-    
         return SceneRequest::None;
     }
 
