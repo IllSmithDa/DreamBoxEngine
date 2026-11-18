@@ -23,6 +23,11 @@ namespace DreamBox
         {
             m_doors.push_back(Door{bounds, false});
         }
+        SDL_Log(
+            "InteractionSystem: %zu chests, %zu doors loaded",
+            m_chests.size(),
+            m_doors.size()
+        );
     }
 
     float InteractionSystem::DistanceSquared(
