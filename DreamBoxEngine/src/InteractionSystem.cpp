@@ -1,8 +1,13 @@
 
 #include "DreamBox/InteractionSystem.h"
+
+#include "DreamBox/Chest.h"
+#include "DreamBox/Door.h"
 #include "DreamBox/Collision.h"
-#include <cmath>
+
 #include <SDL3/SDL_log.h>
+
+#include <memory>
 
 namespace DreamBox
 {
@@ -11,22 +16,29 @@ namespace DreamBox
         const std::vector<SDL_FRect>& doorBounds
     )
     {
-        m_chests.clear();
-        m_doors.clear();
+        m_objects.clear();
+
+        m_objects.reserve(
+            chestBounds.size() + doorBounds.size()
+        );
 
         for (const SDL_FRect& bounds : chestBounds)
         {
-            m_chests.push_back(Chest{bounds, false});
+            m_objects.push_back(
+                std::make_unique<Chest>(bounds)
+            );
         }
 
         for (const SDL_FRect& bounds : doorBounds)
         {
-            m_doors.push_back(Door{bounds, false});
+            m_objects.push_back(
+                std::make_unique<Door>(bounds)
+            );
         }
+
         SDL_Log(
-            "InteractionSystem: %zu chests, %zu doors loaded",
-            m_chests.size(),
-            m_doors.size()
+            "InteractionSystem: %zu objects loaded",
+            m_objects.size()
         );
     }
 
@@ -35,11 +47,17 @@ namespace DreamBox
         const SDL_FRect& second
     )
     {
-        const float firstX = first.x + first.w / 2.0f;
-        const float firstY = first.y + first.h / 2.0f;
+        const float firstX =
+            first.x + first.w / 2.0f;
 
-        const float secondX = second.x + second.w / 2.0f;
-        const float secondY = second.y + second.h / 2.0f;
+        const float firstY =
+            first.y + first.h / 2.0f;
+
+        const float secondX =
+            second.x + second.w / 2.0f;
+
+        const float secondY =
+            second.y + second.h / 2.0f;
 
         const float dx = firstX - secondX;
         const float dy = firstY - secondY;
@@ -52,173 +70,76 @@ namespace DreamBox
         const SDL_FRect& object
     )
     {
-        constexpr float interactionRange = 70.0f;
+        constexpr float range = 70.0f;
 
         return DistanceSquared(player, object) <=
-            interactionRange * interactionRange;
+            range * range;
     }
-    
+
     void InteractionSystem::Update(
         bool interactPressed,
         const SDL_FRect& playerHitbox
     )
     {
-
-        // Temporary input diagnostics.
-        if (interactPressed)
-        {
-            SDL_Log(
-                "E detected: current=1, previous=%d",
-                m_wasInteractPressed ? 1 : 0
-            );
-        }
-        else if (m_wasInteractPressed)
-        {
-            SDL_Log("E released: resetting interaction state");
-        }
-
         const bool newPress =
             interactPressed && !m_wasInteractPressed;
-    
+
+        // Important: update this every frame.
         m_wasInteractPressed = interactPressed;
-    
+
         if (!newPress)
         {
             return;
         }
-      
-        SDL_Log(
-            "Interaction requested: %zu chests, %zu doors",
-            m_chests.size(),
-            m_doors.size()
-        );
-      
-        constexpr float interactionRange = 70.0f;
-      
+
+        constexpr float range = 70.0f;
+
+        const float maxDistanceSquared =
+            range * range;
+
+        Interactable* nearest = nullptr;
         float nearestDistanceSquared =
-            interactionRange * interactionRange;
-      
-        Chest* nearestChest = nullptr;
-        Door* nearestDoor = nullptr;
-      
-        // ----------------------------------
-        // Find nearest unopened chest
-        // ----------------------------------
-      
-        for (Chest& chest : m_chests)
+            maxDistanceSquared;
+
+        for (const auto& object : m_objects)
         {
-            if (chest.opened)
+            if (!object->CanInteract())
             {
                 continue;
             }
-          
-            const float distanceSquared =
+
+            const float distance =
                 DistanceSquared(
                     playerHitbox,
-                    chest.bounds
+                    object->GetBounds()
                 );
-              
-            if (distanceSquared <= nearestDistanceSquared)
+
+            if (distance <= maxDistanceSquared &&
+                (!nearest ||
+                 distance < nearestDistanceSquared))
             {
-                nearestDistanceSquared = distanceSquared;
-            
-                nearestChest = &chest;
-                nearestDoor = nullptr;
+                nearestDistanceSquared = distance;
+                nearest = object.get();
             }
         }
-      
-        // ----------------------------------
-        // Find nearest door
-        // ----------------------------------
-      
-        for (Door& door : m_doors)
+
+        if (nearest)
         {
-            const float distanceSquared =
-                DistanceSquared(
-                    playerHitbox,
-                    door.bounds
-                );
-              
-            // Log the distance for debugging.
-            SDL_Log(
-                "Door distance: %.1f units",
-                static_cast<float>(
-                    std::sqrt(distanceSquared)
-                )
-            );
-          
-            if (distanceSquared < nearestDistanceSquared)
-            {
-                nearestDistanceSquared = distanceSquared;
-            
-                nearestDoor = &door;
-                nearestChest = nullptr;
-            }
+            nearest->Interact(playerHitbox);
         }
-      
-        // ----------------------------------
-        // Interact with nearest object
-        // ----------------------------------
-      
-        if (nearestChest)
-        {
-            nearestChest->opened = true;
-        
-            SDL_Log("Treasure chest opened!");
-            return;
-        }
-      
-        if (nearestDoor)
-        {
-            if (!nearestDoor->open)
-            {
-                nearestDoor->open = true;
-            
-                SDL_Log("Door opened");
-            }
-            else if (!Collision::Intersects(
-                         playerHitbox,
-                         nearestDoor->bounds))
-            {
-                nearestDoor->open = false;
-            
-                SDL_Log("Door closed");
-            }
-            else
-            {
-                SDL_Log(
-                    "Cannot close door: player is inside"
-                );
-            }
-          
-            return;
-        }
-      
-        SDL_Log(
-            "No interactable object within range"
-        );
     }
 
     bool InteractionSystem::CollidesWithSolid(
         const SDL_FRect& playerHitbox
     ) const
     {
-        for (const Chest& chest : m_chests)
+        for (const auto& object : m_objects)
         {
-            if (Collision::Intersects(
-                    playerHitbox,
-                    chest.bounds))
-            {
-                return true;
-            }
-        }
-
-        for (const Door& door : m_doors)
-        {
-            if (!door.open &&
+            if (object->IsSolid() &&
                 Collision::Intersects(
                     playerHitbox,
-                    door.bounds))
+                    object->GetBounds()
+                ))
             {
                 return true;
             }
@@ -237,87 +158,18 @@ namespace DreamBox
             return;
         }
 
-        // ----------------------------------
-        // Draw treasure chests
-        // ----------------------------------
-        for (const Chest& chest : m_chests)
+        for (const auto& object : m_objects)
         {
-            SDL_FRect visual = chest.bounds;
+            const bool nearby =
+                IsNearby(
+                    playerHitbox,
+                    object->GetBounds()
+                );
 
-            visual.x += 5.0f;
-            visual.y += 8.0f;
-            visual.w -= 10.0f;
-            visual.h -= 12.0f;
-
-            if (chest.opened)
-            {
-                SDL_SetRenderDrawColor(
-                    renderer, 95, 65, 40, 255);
-            }
-            else
-            {
-                SDL_SetRenderDrawColor(
-                    renderer, 165, 100, 45, 255);
-            }
-
-            SDL_RenderFillRect(renderer, &visual);
-
-            SDL_SetRenderDrawColor(
-                renderer, 40, 25, 15, 255);
-
-            SDL_RenderRect(renderer, &visual);
-
-            if (!chest.opened &&
-                IsNearby(playerHitbox, chest.bounds))
-            {
-                SDL_SetRenderDrawColor(
-                    renderer, 255, 220, 70, 255);
-
-                SDL_RenderRect(renderer, &chest.bounds);
-            }
-        }
-
-        // ----------------------------------
-        // Draw doors
-        // ----------------------------------
-        for (const Door& door : m_doors)
-        {
-            SDL_FRect visual = door.bounds;
-
-            visual.x += 6.0f;
-            visual.y += 2.0f;
-            visual.w -= 12.0f;
-            visual.h -= 4.0f;
-
-            if (door.open)
-            {
-                visual.x += 12.0f;
-                visual.w -= 12.0f;
-
-                SDL_SetRenderDrawColor(
-                    renderer, 90, 60, 35, 255);
-            }
-            else
-            {
-                SDL_SetRenderDrawColor(
-                    renderer, 145, 90, 45, 255);
-            }
-
-            SDL_RenderFillRect(renderer, &visual);
-
-            SDL_SetRenderDrawColor(
-                renderer, 40, 25, 15, 255);
-
-            SDL_RenderRect(renderer, &visual);
-
-            if (!door.open &&
-                IsNearby(playerHitbox, door.bounds))
-            {
-                SDL_SetRenderDrawColor(
-                    renderer, 255, 220, 70, 255);
-
-                SDL_RenderRect(renderer, &door.bounds);
-            }
+            object->Render(
+                renderer,
+                nearby
+            );
         }
     }
 }

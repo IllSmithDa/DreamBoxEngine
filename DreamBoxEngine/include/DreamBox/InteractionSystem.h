@@ -1,6 +1,9 @@
+
 #pragma once
 
-#include <SDL3/SDL_render.h>
+#include "DreamBox/Interactable.h"
+
+#include <memory>
 #include <vector>
 
 namespace DreamBox
@@ -28,20 +31,8 @@ namespace DreamBox
         ) const;
 
     private:
-        struct Chest
-        {
-            SDL_FRect bounds{};
-            bool opened = false;
-        };
-
-        struct Door
-        {
-            SDL_FRect bounds{};
-            bool open = false;
-        };
-
-        std::vector<Chest> m_chests;
-        std::vector<Door> m_doors;
+        std::vector<std::unique_ptr<Interactable>>
+            m_objects;
 
         bool m_wasInteractPressed = false;
 

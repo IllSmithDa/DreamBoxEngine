@@ -95,6 +95,8 @@ add_executable(
     src/SpriteAnimator.cpp
     src/Tilemap.cpp
     src/InteractionSystem.cpp
+    src/Door.cpp
+    src/Chest.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -112,6 +114,9 @@ add_executable(
     include/DreamBox/SpriteAnimator.h
     include/DreamBox/Tilemap.h
     include/DreamBox/InteractionSystem.h
+    include/DreamBox/Chest.h
+    include/DreamBox/Door.h
+
 )   
 
 target_include_directories(
