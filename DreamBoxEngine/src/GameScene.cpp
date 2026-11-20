@@ -3,6 +3,8 @@
 #include <SDL3/SDL_filesystem.h>
 #include <string>
 #include <cmath>
+#include <algorithm>
+
 
 
 namespace DreamBox
@@ -24,6 +26,10 @@ namespace DreamBox
                 "Using the default tilemap."
             );
         }
+        // reset player pos
+        m_moveTarget.reset();
+
+
         m_tilemap.LoadTileset(renderer);
         const char* basePath = SDL_GetBasePath( );
         if (!basePath)
@@ -57,69 +63,212 @@ namespace DreamBox
         float deltaTime
     )
     {
-        // Return to Main Menu.
+        // ----------------------------------
+        // 1. Scene input
+        // ----------------------------------
+
         if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
         {
             return SceneRequest::MainMenu;
         }
-    
+
         // ----------------------------------
-        // Player movement and collision
+        // 2. Click-to-move destination
         // ----------------------------------
-    
+
+        if (input.WasPointPressed())
+        {
+            const SDL_FPoint point =
+                input.GetPointPosition();
+
+            // Check the destination using the player's
+            // actual collision dimensions.
+            SDL_FRect targetHitbox =
+                m_player.GetCollisionBounds();
+
+            targetHitbox.x =
+                point.x - targetHitbox.w / 2.0f;
+
+            targetHitbox.y =
+                point.y - targetHitbox.h / 2.0f;
+
+            constexpr float worldWidth =
+                Tilemap::Columns * Tilemap::TileSize;
+
+            constexpr float worldHeight =
+                Tilemap::Rows * Tilemap::TileSize;
+
+            const bool insideWorld =
+                targetHitbox.x >= 0.0f &&
+                targetHitbox.y >= 0.0f &&
+                targetHitbox.x + targetHitbox.w <= worldWidth &&
+                targetHitbox.y + targetHitbox.h <= worldHeight;
+
+            const bool blocked =
+                m_tilemap.CollidesWithWall(targetHitbox) ||
+                m_interactions.CollidesWithSolid(targetHitbox);
+
+            if (insideWorld && !blocked)
+            {
+                m_moveTarget = point;
+            }
+        }
+
+        // ----------------------------------
+        // 3. Calculate player movement
+        // ----------------------------------
+
         const SDL_FRect previousBounds =
             m_player.GetBounds();
-    
+
+        // Start with normal keyboard movement.
         SDL_FPoint movement =
-            m_player.GetMovement(
-                input,
-                deltaTime
-            );
-        
+            m_player.GetMovement(input, deltaTime);
+
+        const bool keyboardMoving =
+            movement.x != 0.0f ||
+            movement.y != 0.0f;
+
+        if (keyboardMoving)
+        {
+            // WASD takes priority over click-to-move.
+            m_moveTarget.reset();
+        }
+        else if (m_moveTarget.has_value())
+        {
+            const SDL_FRect hitbox =
+                m_player.GetCollisionBounds();
+
+            const float centerX =
+                hitbox.x + hitbox.w / 2.0f;
+
+            const float centerY =
+                hitbox.y + hitbox.h / 2.0f;
+
+            const float dx =
+                m_moveTarget->x - centerX;
+
+            const float dy =
+                m_moveTarget->y - centerY;
+
+            const float distance =
+                std::sqrt(dx * dx + dy * dy);
+
+            constexpr float arrivalTolerance = 1.0f;
+
+            if (distance <= arrivalTolerance)
+            {
+                m_moveTarget.reset();
+            }
+            else
+            {
+                // Match the existing player movement speed.
+                constexpr float moveSpeed = 200.0f;
+
+                const float step =
+                    std::min(
+                        moveSpeed * std::max(deltaTime, 0.0f),
+                        distance
+                    );
+
+                // Normalize direction and apply movement.
+                movement.x = (dx / distance) * step;
+                movement.y = (dy / distance) * step;
+            }
+        }
+
+        // ----------------------------------
+        // 4. Player movement and collision
+        // ----------------------------------
+
         // Horizontal movement.
         m_player.Move(movement.x, 0.0f);
-        
+
         if (PlayerCollidesWithWall())
         {
             m_player.Move(-movement.x, 0.0f);
         }
-    
+
         // Vertical movement.
         m_player.Move(0.0f, movement.y);
-    
+
         if (PlayerCollidesWithWall())
         {
             m_player.Move(0.0f, -movement.y);
         }
-    
-        // ----------------------------------
-        // Player animation
-        // ----------------------------------
-    
+
         const SDL_FRect currentBounds =
             m_player.GetBounds();
-    
+
         const float movementX =
             currentBounds.x - previousBounds.x;
-    
+
         const float movementY =
             currentBounds.y - previousBounds.y;
-    
+
+        // ----------------------------------
+        // 5. Check click-to-move progress
+        // ----------------------------------
+
+        if (m_moveTarget.has_value())
+        {
+            const SDL_FRect hitbox =
+                m_player.GetCollisionBounds();
+
+            const float centerX =
+                hitbox.x + hitbox.w / 2.0f;
+
+            const float centerY =
+                hitbox.y + hitbox.h / 2.0f;
+
+            const float dx =
+                m_moveTarget->x - centerX;
+
+            const float dy =
+                m_moveTarget->y - centerY;
+
+            const float remainingDistance =
+                std::sqrt(dx * dx + dy * dy);
+
+            constexpr float arrivalTolerance = 1.0f;
+            constexpr float movementEpsilon = 0.0001f;
+
+            const bool movementRequested =
+                std::fabs(movement.x) > movementEpsilon ||
+                std::fabs(movement.y) > movementEpsilon;
+
+            const bool actuallyMoved =
+                std::fabs(movementX) > movementEpsilon ||
+                std::fabs(movementY) > movementEpsilon;
+
+            // Stop when the destination is reached
+            // or movement is completely blocked.
+            if (remainingDistance <= arrivalTolerance ||
+                (movementRequested && !actuallyMoved))
+            {
+                m_moveTarget.reset();
+            }
+        }
+
+        // ----------------------------------
+        // 6. Player animation
+        // ----------------------------------
+
         m_playerAnimator.Update(
             movementX,
             movementY,
             deltaTime
         );
-    
+
         // ----------------------------------
-        // Level exit detection
+        // 7. Level exit detection
         // ----------------------------------
-    
+
         const auto exitBounds =
             m_tilemap.GetExitBounds();
-    
+
         bool onExit = false;
-    
+
         if (exitBounds.has_value())
         {
             onExit = Collision::Intersects(
@@ -127,31 +276,33 @@ namespace DreamBox
                 exitBounds.value()
             );
         }
-    
+
         if (onExit && !m_wasOnExit)
         {
             m_wasOnExit = true;
-        
+
             const int nextLevel =
                 (m_currentLevel == 1) ? 2 : 1;
-        
+
             LoadLevel(nextLevel);
         }
         else if (!onExit)
         {
             m_wasOnExit = false;
         }
-    
+
         // ----------------------------------
-        // Interactable objects
+        // 8. Interactable objects
         // ----------------------------------
-        
+
         m_interactions.Update(
             input.IsKeyPressed(SDL_SCANCODE_E),
             m_player.GetCollisionBounds()
         );
+
         return SceneRequest::None;
     }
+
 
 
 
@@ -214,6 +365,39 @@ namespace DreamBox
             SDL_RenderRect(
                 renderer,
                 &collisionBounds
+            );
+        }
+
+
+        // ----------------------------------
+        // Click-to-move target marker
+        // ----------------------------------
+
+        if (m_moveTarget.has_value())
+        {
+            SDL_SetRenderDrawColor(
+                renderer,
+                50, 230, 150, 255
+            );
+        
+            constexpr float markerSize = 6.0f;
+        
+            // Horizontal line.
+            SDL_RenderLine(
+                renderer,
+                m_moveTarget->x - markerSize,
+                m_moveTarget->y,
+                m_moveTarget->x + markerSize,
+                m_moveTarget->y
+            );
+        
+            // Vertical line.
+            SDL_RenderLine(
+                renderer,
+                m_moveTarget->x,
+                m_moveTarget->y - markerSize,
+                m_moveTarget->x,
+                m_moveTarget->y + markerSize
             );
         }
 

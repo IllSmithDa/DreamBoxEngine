@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <memory>
+#include <optional>
 #include "DreamBox/Scene.h"
 #include "DreamBox/Player.h"
 #include "DreamBox/Wall.h"
@@ -62,5 +63,7 @@ namespace DreamBox
         bool LoadLevel(int level);
 
         InteractionSystem m_interactions;
+
+        std::optional<SDL_FPoint> m_moveTarget;
     };
 }

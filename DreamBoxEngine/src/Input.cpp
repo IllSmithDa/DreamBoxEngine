@@ -1,4 +1,5 @@
 #include "DreamBox/Input.h"
+#include <SDL3/SDL_touch.h>
 
 namespace DreamBox
 {
@@ -22,6 +23,7 @@ namespace DreamBox
         // Clear pending flags for the next frame
         m_pendingMouseMoved = false;
         m_pendingLeftClick = false;
+        m_pointPressed = false;
     }
 
 
@@ -59,6 +61,32 @@ namespace DreamBox
         
             m_pendingLeftClick = true;
         }
+
+        // Left mouse click.
+        if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN &&
+            event.button.button == SDL_BUTTON_LEFT &&
+            event.button.which != SDL_TOUCH_MOUSEID)
+        {
+            m_pointPressed = true;
+        
+            m_pointPosition = SDL_FPoint{
+                event.button.x,
+                event.button.y
+            };
+        }
+
+        // Finger tap.
+        if (event.type == SDL_EVENT_FINGER_DOWN &&
+            event.tfinger.touchID != SDL_MOUSE_TOUCHID)
+        {
+            m_pointPressed = true;
+        
+            m_pointPosition = SDL_FPoint{
+                event.tfinger.x,
+                event.tfinger.y
+            };
+        }
+
     }
     
     float Input::GetMouseX() const
