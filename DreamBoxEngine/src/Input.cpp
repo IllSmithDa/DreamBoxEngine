@@ -16,14 +16,17 @@ namespace DreamBox
             m_currentKeys[i] = keyboardState[i];
         }
     
-        // Transfer pending mouse events
+
+        // Transfer pending events to this frame.
         m_mouseMoved = m_pendingMouseMoved;
         m_leftMousePressed = m_pendingLeftClick;
-    
-        // Clear pending flags for the next frame
+        m_pointPressed = m_pendingPointPressed;
+
+        // Clear pending events for the next frame.
         m_pendingMouseMoved = false;
         m_pendingLeftClick = false;
-        m_pointPressed = false;
+        m_pendingPointPressed = false;
+
     }
 
 
@@ -67,7 +70,7 @@ namespace DreamBox
             event.button.button == SDL_BUTTON_LEFT &&
             event.button.which != SDL_TOUCH_MOUSEID)
         {
-            m_pointPressed = true;
+            m_pendingPointPressed = true;
         
             m_pointPosition = SDL_FPoint{
                 event.button.x,
@@ -79,7 +82,7 @@ namespace DreamBox
         if (event.type == SDL_EVENT_FINGER_DOWN &&
             event.tfinger.touchID != SDL_MOUSE_TOUCHID)
         {
-            m_pointPressed = true;
+            m_pendingPointPressed = true;
         
             m_pointPosition = SDL_FPoint{
                 event.tfinger.x,

@@ -59,6 +59,7 @@ namespace DreamBox
         bool m_leftMousePressed = false;
 
         bool m_pointPressed = false;
+        bool m_pendingPointPressed = false;
         SDL_FPoint m_pointPosition{};
     };
 }
