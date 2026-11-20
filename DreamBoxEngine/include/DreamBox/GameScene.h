@@ -3,6 +3,8 @@
 #include <vector>
 #include <memory>
 #include <optional>
+#include <vector>
+#include <cstddef>
 #include "DreamBox/Scene.h"
 #include "DreamBox/Player.h"
 #include "DreamBox/Wall.h"
@@ -67,5 +69,15 @@ namespace DreamBox
         std::optional<SDL_FPoint> m_moveTarget;
 
         std::optional<SDL_FPoint> m_hoverPoint;
+
+        bool TrySetMovePath(const SDL_FPoint& destination);
+
+        SDL_FPoint CalculatePathMovement(float deltaTime);
+
+        void CancelMovePath();
+
+        std::vector<SDL_FPoint> m_waypoints;
+
+        std::size_t m_nextWaypoint = 0;
     };
 }
