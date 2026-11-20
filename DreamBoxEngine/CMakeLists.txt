@@ -258,3 +258,37 @@ add_test(
     NAME ButtonTests
     COMMAND ButtonTests
 )
+
+
+# ==================================
+# Interaction Tests
+# ==================================
+
+add_executable(
+    InteractionTests
+
+    ../tests/InteractionTests.cpp
+
+    src/InteractionSystem.cpp
+    src/Chest.cpp
+    src/Door.cpp
+    src/Collision.cpp
+    src/GameObject.cpp
+)
+
+target_include_directories(
+    InteractionTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(
+    InteractionTests
+    PRIVATE
+    SDL3::SDL3
+)
+
+add_test(
+    NAME InteractionTests
+    COMMAND InteractionTests
+)
