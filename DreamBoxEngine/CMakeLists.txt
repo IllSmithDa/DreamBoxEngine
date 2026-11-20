@@ -292,3 +292,28 @@ add_test(
     NAME InteractionTests
     COMMAND InteractionTests
 )
+
+
+
+# ==================================
+# Pathfinder Tests
+# ==================================
+
+add_executable(
+    PathfinderTests
+
+    ../tests/PathfinderTests.cpp
+    src/Pathfinder.cpp
+)
+
+target_include_directories(
+    PathfinderTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+add_test(
+    NAME PathfinderTests
+    COMMAND PathfinderTests
+)
+
