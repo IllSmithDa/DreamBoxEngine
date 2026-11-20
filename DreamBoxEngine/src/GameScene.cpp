@@ -71,6 +71,18 @@ namespace DreamBox
         }
 
         // ----------------------------------
+        // Mouse hover position
+        // ----------------------------------
+            
+        if (input.WasMouseMoved())
+        {
+            m_hoverPoint = SDL_FPoint{
+                input.GetMouseX(),
+                input.GetMouseY()
+            };
+        }
+
+        // ----------------------------------
         // 2. Click-to-move destination
         // ----------------------------------
 
@@ -78,37 +90,53 @@ namespace DreamBox
         {
             const SDL_FPoint point =
                 input.GetPointPosition();
-
-            // Check the destination using the player's
-            // actual collision dimensions.
-            SDL_FRect targetHitbox =
-                m_player.GetCollisionBounds();
-
-            targetHitbox.x =
-                point.x - targetHitbox.w / 2.0f;
-
-            targetHitbox.y =
-                point.y - targetHitbox.h / 2.0f;
-
-            constexpr float worldWidth =
-                Tilemap::Columns * Tilemap::TileSize;
-
-            constexpr float worldHeight =
-                Tilemap::Rows * Tilemap::TileSize;
-
-            const bool insideWorld =
-                targetHitbox.x >= 0.0f &&
-                targetHitbox.y >= 0.0f &&
-                targetHitbox.x + targetHitbox.w <= worldWidth &&
-                targetHitbox.y + targetHitbox.h <= worldHeight;
-
-            const bool blocked =
-                m_tilemap.CollidesWithWall(targetHitbox) ||
-                m_interactions.CollidesWithSolid(targetHitbox);
-
-            if (insideWorld && !blocked)
+        
+            // Give interactable objects first priority.
+            const bool clickedObject =
+                m_interactions.HandlePointerPress(
+                    point,
+                    m_player.GetCollisionBounds()
+                );
+            
+            if (clickedObject)
             {
-                m_moveTarget = point;
+                // Stop any previous click-to-move action.
+                m_moveTarget.reset();
+            }
+            else
+            {
+                // No object was selected.
+                // Treat the click as a movement destination.
+            
+                SDL_FRect targetHitbox =
+                    m_player.GetCollisionBounds();
+            
+                targetHitbox.x =
+                    point.x - targetHitbox.w / 2.0f;
+            
+                targetHitbox.y =
+                    point.y - targetHitbox.h / 2.0f;
+            
+                constexpr float worldWidth =
+                    Tilemap::Columns * Tilemap::TileSize;
+            
+                constexpr float worldHeight =
+                    Tilemap::Rows * Tilemap::TileSize;
+            
+                const bool insideWorld =
+                    targetHitbox.x >= 0.0f &&
+                    targetHitbox.y >= 0.0f &&
+                    targetHitbox.x + targetHitbox.w <= worldWidth &&
+                    targetHitbox.y + targetHitbox.h <= worldHeight;
+            
+                const bool blocked =
+                    m_tilemap.CollidesWithWall(targetHitbox) ||
+                    m_interactions.CollidesWithSolid(targetHitbox);
+            
+                if (insideWorld && !blocked)
+                {
+                    m_moveTarget = point;
+                }
             }
         }
 
@@ -129,8 +157,8 @@ namespace DreamBox
 
         if (keyboardMoving)
         {
-            // WASD takes priority over click-to-move.
             m_moveTarget.reset();
+            m_interactions.ClearSelection();
         }
         else if (m_moveTarget.has_value())
         {
@@ -314,7 +342,8 @@ namespace DreamBox
 
         m_interactions.Render(
             renderer,
-            m_player.GetCollisionBounds()
+            m_player.GetCollisionBounds(),
+            m_hoverPoint
         );
 
 
@@ -483,7 +512,8 @@ namespace DreamBox
 
         // reset player pos
         m_moveTarget.reset();
-
+        m_hoverPoint.reset();
+        
         SDL_Log(
             "Successfully loaded level %d",
             m_currentLevel

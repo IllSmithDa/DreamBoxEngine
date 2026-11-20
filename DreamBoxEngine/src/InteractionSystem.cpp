@@ -16,6 +16,10 @@ namespace DreamBox
         const std::vector<SDL_FRect>& doorBounds
     )
     {
+
+        // clear and reset interaction systems
+        m_objects.clear();
+        m_selectedIndex.reset();
         m_objects.clear();
 
         m_objects.reserve(
@@ -150,26 +154,121 @@ namespace DreamBox
 
     void InteractionSystem::Render(
         SDL_Renderer* renderer,
-        const SDL_FRect& playerHitbox
+        const SDL_FRect& playerHitbox,
+        const std::optional<SDL_FPoint>& mousePosition
     ) const
     {
         if (!renderer)
         {
             return;
         }
-
-        for (const auto& object : m_objects)
+      
+        for (std::size_t i = 0; i < m_objects.size(); ++i)
         {
+            const Interactable& object = *m_objects[i];
+        
+            const SDL_FRect& bounds =
+                object.GetBounds();
+        
             const bool nearby =
-                IsNearby(
-                    playerHitbox,
-                    object->GetBounds()
+                IsNearby(playerHitbox, bounds);
+        
+            // Keep our existing object rendering.
+            object.Render(renderer, nearby);
+        
+            if (!object.CanInteract())
+            {
+                continue;
+            }
+          
+            // Hover does not depend on player proximity.
+            const bool hovered =
+                mousePosition.has_value() &&
+                SDL_PointInRectFloat(
+                    &mousePosition.value(),
+                    &bounds
                 );
-
-            object->Render(
-                renderer,
-                nearby
-            );
+              
+            const bool selected =
+                m_selectedIndex.has_value() &&
+                *m_selectedIndex == i;
+              
+            if (hovered)
+            {
+                // Green = mouse hovering.
+                SDL_SetRenderDrawColor(
+                    renderer, 50, 230, 150, 255
+                );
+              
+                SDL_RenderRect(renderer, &bounds);
+            }
+            else if (selected)
+            {
+                // Cyan = selected object.
+                SDL_SetRenderDrawColor(
+                    renderer, 80, 200, 255, 255
+                );
+              
+                SDL_RenderRect(renderer, &bounds);
+            }
         }
     }
+
+
+    bool InteractionSystem::HandlePointerPress(
+        const SDL_FPoint& point,
+        const SDL_FRect& playerHitbox
+    )
+    {
+        // A new click replaces the previous selection.
+        m_selectedIndex.reset();
+    
+        // Search in reverse rendering order so an object
+        // drawn on top is selected first.
+        for (std::size_t i = m_objects.size(); i > 0; --i)
+        {
+            const std::size_t index = i - 1;
+            Interactable& object = *m_objects[index];
+        
+            const SDL_FRect& bounds =
+                object.GetBounds();
+        
+            if (!SDL_PointInRectFloat(&point, &bounds))
+            {
+                continue;
+            }
+          
+            // Consume clicks on an existing object,
+            // even if it is no longer interactable.
+            if (!object.CanInteract())
+            {
+                return true;
+            }
+          
+            m_selectedIndex = index;
+          
+            if (IsNearby(playerHitbox, bounds))
+            {
+                object.Interact(playerHitbox);
+            
+                // An opened chest is no longer selectable.
+                if (!object.CanInteract())
+                {
+                    m_selectedIndex.reset();
+                }
+            }
+            else
+            {
+                SDL_Log(
+                    "Object selected outside interaction range"
+                );
+            }
+          
+            return true;
+        }
+      
+        // No object was clicked.
+        return false;
+    }
+
 }

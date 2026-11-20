@@ -65,5 +65,7 @@ namespace DreamBox
         InteractionSystem m_interactions;
 
         std::optional<SDL_FPoint> m_moveTarget;
+
+        std::optional<SDL_FPoint> m_hoverPoint;
     };
 }
