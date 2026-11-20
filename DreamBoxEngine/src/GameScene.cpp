@@ -26,8 +26,6 @@ namespace DreamBox
                 "Using the default tilemap."
             );
         }
-        // reset player pos
-        m_moveTarget.reset();
 
 
         m_tilemap.LoadTileset(renderer);
@@ -483,11 +481,13 @@ namespace DreamBox
 
         m_currentLevel = level;
 
+        // reset player pos
+        m_moveTarget.reset();
+
         SDL_Log(
             "Successfully loaded level %d",
             m_currentLevel
         );
-
         return true;
     }
 
