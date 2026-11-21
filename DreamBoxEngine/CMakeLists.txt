@@ -97,6 +97,8 @@ add_executable(
     src/InteractionSystem.cpp
     src/Door.cpp
     src/Chest.cpp
+    src/Pathfinder.cpp
+
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -116,6 +118,7 @@ add_executable(
     include/DreamBox/InteractionSystem.h
     include/DreamBox/Chest.h
     include/DreamBox/Door.h
+    include/DreamBox/Pathfinder.h
 
 )   
 
