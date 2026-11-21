@@ -316,3 +316,48 @@ int main()
 
     return failed == 0 ? 0 : 1;
 }
+
+
+void TestSelectedInteraction()
+{
+    InteractionSystem system;
+
+    const SDL_FRect door{120, 0, 20, 20};
+    const SDL_FRect farPlayer{0, 0, 10, 10};
+    const SDL_FRect nearPlayer{90, 0, 10, 10};
+
+    system.Initialize({}, {door});
+
+    const SDL_FPoint click{130, 10};
+
+    Require(
+        system.HandlePointerPress(click, farPlayer),
+        "Click should select the door"
+    );
+
+    Require(
+        system.GetSelectedBounds().has_value(),
+        "Selected door bounds should be available"
+    );
+
+    Require(
+        !system.TryInteractSelected(farPlayer),
+        "Distant player should not open door"
+    );
+
+    Require(
+        system.CollidesWithSolid(door),
+        "Door should remain closed while player is far"
+    );
+
+    Require(
+        system.TryInteractSelected(nearPlayer),
+        "Nearby player should activate selected door"
+    );
+
+    Require(
+        !system.CollidesWithSolid(door),
+        "Door should open after player approaches"
+    );
+}
+
