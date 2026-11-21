@@ -215,20 +215,22 @@ namespace DreamBox
     }
 
 
+
     bool InteractionSystem::HandlePointerPress(
         const SDL_FPoint& point,
         const SDL_FRect& playerHitbox
     )
     {
-        // A new click replaces the previous selection.
+        // Replace any previous selection.
         m_selectedIndex.reset();
     
-        // Search in reverse rendering order so an object
-        // drawn on top is selected first.
+        // Reverse order matches our rendering order.
         for (std::size_t i = m_objects.size(); i > 0; --i)
         {
             const std::size_t index = i - 1;
-            Interactable& object = *m_objects[index];
+        
+            Interactable& object =
+                *m_objects[index];
         
             const SDL_FRect& bounds =
                 object.GetBounds();
@@ -238,8 +240,7 @@ namespace DreamBox
                 continue;
             }
           
-            // Consume clicks on an existing object,
-            // even if it is no longer interactable.
+            // Consume clicks on an opened chest, too.
             if (!object.CanInteract())
             {
                 return true;
@@ -247,28 +248,69 @@ namespace DreamBox
           
             m_selectedIndex = index;
           
-            if (IsNearby(playerHitbox, bounds))
-            {
-                object.Interact(playerHitbox);
-            
-                // An opened chest is no longer selectable.
-                if (!object.CanInteract())
-                {
-                    m_selectedIndex.reset();
-                }
-            }
-            else
-            {
-                SDL_Log(
-                    "Object selected outside interaction range"
-                );
-            }
-          
             return true;
         }
       
-        // No object was clicked.
         return false;
     }
+
+
+
+    std::optional<SDL_FRect>
+    InteractionSystem::GetSelectedBounds() const
+    {
+        if (!m_selectedIndex.has_value() ||
+            *m_selectedIndex >= m_objects.size())
+        {
+            return std::nullopt;
+        }
+      
+        const Interactable& object =
+            *m_objects[*m_selectedIndex];
+      
+        if (!object.CanInteract())
+        {
+            return std::nullopt;
+        }
+      
+        return object.GetBounds();
+    }
+
+    bool InteractionSystem::TryInteractSelected(
+        const SDL_FRect& playerHitbox
+    )
+    {
+        if (!m_selectedIndex.has_value() ||
+            *m_selectedIndex >= m_objects.size())
+        {
+            return false;
+        }
+      
+        Interactable& object =
+            *m_objects[*m_selectedIndex];
+      
+        if (!object.CanInteract())
+        {
+            m_selectedIndex.reset();
+            return false;
+        }
+      
+        if (!IsNearby(playerHitbox, object.GetBounds()))
+        {
+            return false;
+        }
+      
+        object.Interact(playerHitbox);
+      
+        // An opened chest is no longer interactable.
+        // Doors remain selectable after opening.
+        if (!object.CanInteract())
+        {
+            m_selectedIndex.reset();
+        }
+      
+        return true;
+    }
+
 
 }

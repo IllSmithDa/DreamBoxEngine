@@ -41,6 +41,13 @@ namespace DreamBox
         {
             m_selectedIndex.reset();
         }
+
+        std::optional<SDL_FRect> GetSelectedBounds() const;
+
+        bool TryInteractSelected(
+            const SDL_FRect& playerHitbox
+        );
+        
     private:
         std::vector<std::unique_ptr<Interactable>>
             m_objects;
@@ -58,5 +65,6 @@ namespace DreamBox
         );
 
         std::optional<std::size_t> m_selectedIndex;
+        
     };
 }

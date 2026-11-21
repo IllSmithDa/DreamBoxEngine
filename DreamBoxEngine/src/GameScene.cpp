@@ -91,38 +91,56 @@ namespace DreamBox
         }
 
         // ----------------------------------
-        // 2. Click-to-move destination
+        // Pointer selection and navigation
         // ----------------------------------
 
-        
-    // ----------------------------------
-    // 2. Pointer selection and pathfinding
-    // ----------------------------------
-        
-    if (input.WasPointPressed())
-    {
-        const SDL_FPoint point =
-            input.GetPointPosition();
-    
-        // Interactable objects have first priority.
-        const bool clickedObject =
-            m_interactions.HandlePointerPress(
-                point,
-                m_player.GetCollisionBounds()
-            );
-        
-        if (clickedObject)
+        if (input.WasPointPressed())
         {
-            // Object selection cancels existing navigation.
-            // Automatic approach comes in Phase 11D.
+            const SDL_FPoint point =
+                input.GetPointPosition();
+        
+            // A new click cancels any previous action.
             CancelMovePath();
+            m_pendingInteraction = false;
+        
+            // First check whether an object was clicked.
+            const bool clickedObject =
+                m_interactions.HandlePointerPress(
+                    point,
+                    m_player.GetCollisionBounds()
+                );
+            
+            if (clickedObject)
+            {
+                // An opened chest may consume the click
+                // without becoming selected.
+                if (m_interactions.GetSelectedBounds().has_value())
+                {
+                    // Interact immediately if already nearby.
+                    const bool interacted =
+                        m_interactions.TryInteractSelected(
+                            m_player.GetCollisionBounds()
+                        );
+                    
+                    if (!interacted)
+                    {
+                        // Otherwise plan a route toward
+                        // a reachable position near the object.
+                        if (TryNavigateToSelectedObject())
+                        {
+                            m_pendingInteraction = true;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                // Ordinary floor click:
+                // find a path to the clicked position.
+                TrySetMovePath(point);
+            }
         }
-        else
-        {
-            // Generate a walkable route to the floor click.
-            TrySetMovePath(point);
-        }
-    }
+
 
 
         // ----------------------------------
@@ -144,6 +162,7 @@ namespace DreamBox
         {
             // Manual controls always take priority.
             CancelMovePath();
+            m_pendingInteraction = false;
             m_interactions.ClearSelection();
         }
         else if (m_moveTarget.has_value())
@@ -279,15 +298,66 @@ namespace DreamBox
         }
 
         // ----------------------------------
-        // 8. Interactable objects
+        // Keyboard and automatic interactions
         // ----------------------------------
 
+        const bool interactPressed =
+            input.IsKeyPressed(SDL_SCANCODE_E);
+
+        // Manual interaction cancels a pending
+        // automatic interaction to avoid triggering
+        // the same object twice.
+        if (interactPressed && m_pendingInteraction)
+        {
+            m_pendingInteraction = false;
+            CancelMovePath();
+            m_interactions.ClearSelection();
+        }
+
+        // Keep forwarding keyboard state every frame.
         m_interactions.Update(
-            input.IsKeyPressed(SDL_SCANCODE_E),
+            interactPressed,
             m_player.GetCollisionBounds()
         );
 
+        // ----------------------------------
+        // Execute pending interaction
+        // ----------------------------------
+
+        if (m_pendingInteraction)
+        {
+            // The selected object might have been removed
+            // or become unavailable.
+            if (!m_interactions.GetSelectedBounds().has_value())
+            {
+                m_pendingInteraction = false;
+                CancelMovePath();
+            }
+            else if (m_interactions.TryInteractSelected(
+                         m_player.GetCollisionBounds()))
+            {
+                SDL_Log("Automatic interaction completed");
+            
+                // Stop walking immediately after interacting.
+                m_pendingInteraction = false;
+                CancelMovePath();
+            }
+            else if (!m_moveTarget.has_value())
+            {
+                // The route ended or was blocked before
+                // we could reach interaction range.
+                SDL_Log(
+                    "Automatic interaction cancelled: "
+                    "destination not reached"
+                );
+            
+                m_pendingInteraction = false;
+            }
+        }
+
         return SceneRequest::None;
+
+
     }
 
 
@@ -473,6 +543,7 @@ namespace DreamBox
 
         // reset player pos
         CancelMovePath();
+        m_pendingInteraction = false;
         m_hoverPoint.reset();
 
         SDL_Log(
@@ -693,6 +764,133 @@ namespace DreamBox
         CancelMovePath();
 
         return SDL_FPoint{0.0f, 0.0f};
+    }
+
+
+    bool GameScene::TryNavigateToSelectedObject()
+    {
+        const auto selectedBounds =
+            m_interactions.GetSelectedBounds();
+
+        if (!selectedBounds.has_value())
+        {
+            return false;
+        }
+
+        constexpr float tileSize =
+            static_cast<float>(Tilemap::TileSize);
+
+        constexpr float interactionRange = 70.0f;
+        constexpr float rangeSquared =
+            interactionRange * interactionRange;
+
+        const SDL_FRect playerHitbox =
+            m_player.GetCollisionBounds();
+
+        const SDL_FPoint playerCenter{
+            playerHitbox.x + playerHitbox.w / 2.0f,
+            playerHitbox.y + playerHitbox.h / 2.0f
+        };
+
+        const SDL_FPoint objectCenter{
+            selectedBounds->x + selectedBounds->w / 2.0f,
+            selectedBounds->y + selectedBounds->h / 2.0f
+        };
+
+        struct ApproachCandidate
+        {
+            SDL_FPoint position{};
+            float distanceFromPlayer = 0.0f;
+        };
+
+        std::vector<ApproachCandidate> candidates;
+
+        // ----------------------------------
+        // Find tile centers near the object
+        // ----------------------------------
+
+        for (int row = 0; row < Tilemap::Rows; ++row)
+        {
+            for (int column = 0;
+                 column < Tilemap::Columns;
+                 ++column)
+            {
+                const SDL_FPoint position{
+                    (static_cast<float>(column) + 0.5f) *
+                        tileSize,
+                    (static_cast<float>(row) + 0.5f) *
+                        tileSize
+                };
+
+                const float dx =
+                    position.x - objectCenter.x;
+
+                const float dy =
+                    position.y - objectCenter.y;
+
+                const float distanceSquared =
+                    dx * dx + dy * dy;
+
+                // This tile center must be within
+                // the object's interaction range.
+                if (distanceSquared > rangeSquared)
+                {
+                    continue;
+                }
+
+                const float playerDx =
+                    position.x - playerCenter.x;
+
+                const float playerDy =
+                    position.y - playerCenter.y;
+
+                const float playerDistanceSquared =
+                    playerDx * playerDx +
+                    playerDy * playerDy;
+
+                candidates.push_back({
+                    position,
+                    playerDistanceSquared
+                });
+            }
+        }
+
+        // ----------------------------------
+        // Try nearby candidates first
+        // ----------------------------------
+
+        std::sort(
+            candidates.begin(),
+            candidates.end(),
+            [](const ApproachCandidate& a,
+               const ApproachCandidate& b)
+            {
+                return a.distanceFromPlayer <
+                       b.distanceFromPlayer;
+            }
+        );
+
+        for (const ApproachCandidate& candidate : candidates)
+        {
+            // Reuse our existing collision-aware
+            // A* navigation method.
+            if (TrySetMovePath(candidate.position))
+            {
+                SDL_Log(
+                    "Approach point selected: %.1f, %.1f",
+                    candidate.position.x,
+                    candidate.position.y
+                );
+
+                return true;
+            }
+        }
+
+        SDL_Log(
+            "No reachable approach point found"
+        );
+
+        return false;
     }
 
 }

@@ -79,5 +79,9 @@ namespace DreamBox
         std::vector<SDL_FPoint> m_waypoints;
 
         std::size_t m_nextWaypoint = 0;
+
+        bool TryNavigateToSelectedObject();
+
+        bool m_pendingInteraction = false;
     };
 }
