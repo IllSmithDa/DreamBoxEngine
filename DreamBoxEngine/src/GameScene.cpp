@@ -815,29 +815,24 @@ namespace DreamBox
         // not just the center of the destination tile.
         m_waypoints.push_back(destination);
 
+
+        // ----------------------------------
+        // Finalize A* navigation path
+        // ----------------------------------
+        
         m_nextWaypoint = 0;
         m_moveTarget = destination;
-        m_currentLevel = level;
-
-        // Clear previous navigation state.
-        CancelMovePath();
         
-        // Clear pending actions.
-        m_pendingInteraction = false;
-        m_pendingExit = false;
-        
-        // Clear hover position from previous level.
-        m_hoverPoint.reset();
-
-
         SDL_Log(
             "A*: route created with %zu grid nodes "
             "and %zu waypoints",
             path.size(),
             m_waypoints.size()
         );
-
+    
         return true;
+    }
+
     }
 
 
