@@ -82,6 +82,8 @@ namespace DreamBox
 
         bool TryNavigateToSelectedObject();
 
+        // click on interactable objects
         bool m_pendingInteraction = false;
+        bool m_pendingExit = false;
     };
 }

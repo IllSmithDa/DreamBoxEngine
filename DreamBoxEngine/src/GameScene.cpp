@@ -98,48 +98,103 @@ namespace DreamBox
         {
             const SDL_FPoint point =
                 input.GetPointPosition();
-        
-            // A new click cancels any previous action.
+
+            // A new click cancels previous actions.
             CancelMovePath();
             m_pendingInteraction = false;
-        
-            // First check whether an object was clicked.
-            const bool clickedObject =
-                m_interactions.HandlePointerPress(
-                    point,
-                    m_player.GetCollisionBounds()
+            m_pendingExit = false;
+
+            const auto exitBounds =
+                m_tilemap.GetExitBounds();
+
+            const bool clickedExit =
+                exitBounds.has_value() &&
+                SDL_PointInRectFloat(
+                    &point,
+                    &exitBounds.value()
                 );
-            
-            if (clickedObject)
+
+            if (clickedExit)
             {
-                // An opened chest may consume the click
-                // without becoming selected.
-                if (m_interactions.GetSelectedBounds().has_value())
+                // Exit selection takes priority over
+                // ordinary floor movement.
+                m_interactions.ClearSelection();
+
+                const SDL_FRect playerHitbox =
+                    m_player.GetCollisionBounds();
+
+                // Already standing on the exit?
+                if (Collision::Intersects(
+                        playerHitbox,
+                        exitBounds.value()))
                 {
-                    // Interact immediately if already nearby.
-                    const bool interacted =
-                        m_interactions.TryInteractSelected(
-                            m_player.GetCollisionBounds()
-                        );
-                    
-                    if (!interacted)
+                    const int nextLevel =
+                        (m_currentLevel == 1) ? 2 : 1;
+
+                    LoadLevel(nextLevel);
+                    return SceneRequest::None;
+                }
+
+                // Navigate toward the center of the exit.
+                const SDL_FPoint destination{
+                    exitBounds->x + exitBounds->w / 2.0f,
+                    exitBounds->y + exitBounds->h / 2.0f
+                };
+
+                if (TrySetMovePath(destination))
+                {
+                    // Set only after a valid route exists.
+                    m_pendingExit = true;
+
+                    SDL_Log(
+                        "Exit selected: navigating toward exit"
+                    );
+                }
+                else
+                {
+                    SDL_Log(
+                        "Exit selected but no route available"
+                    );
+                }
+            }
+            else
+            {
+                // Ordinary interactable objects.
+                const bool clickedObject =
+                    m_interactions.HandlePointerPress(
+                        point,
+                        m_player.GetCollisionBounds()
+                    );
+
+                if (clickedObject)
+                {
+                    const bool hasSelection =
+                        m_interactions
+                            .GetSelectedBounds()
+                            .has_value();
+
+                    if (hasSelection)
                     {
-                        // Otherwise plan a route toward
-                        // a reachable position near the object.
-                        if (TryNavigateToSelectedObject())
+                        const bool interacted =
+                            m_interactions.TryInteractSelected(
+                                m_player.GetCollisionBounds()
+                            );
+
+                        if (!interacted &&
+                            TryNavigateToSelectedObject())
                         {
                             m_pendingInteraction = true;
                         }
                     }
                 }
-            }
-            else
-            {
-                // Ordinary floor click:
-                // find a path to the clicked position.
-                TrySetMovePath(point);
+                else
+                {
+                    // Ordinary floor click.
+                    TrySetMovePath(point);
+                }
             }
         }
+
 
 
 
@@ -266,8 +321,9 @@ namespace DreamBox
             deltaTime
         );
 
+
         // ----------------------------------
-        // 7. Level exit detection
+        // Level exit detection
         // ----------------------------------
 
         const auto exitBounds =
@@ -283,19 +339,37 @@ namespace DreamBox
             );
         }
 
-        if (onExit && !m_wasOnExit)
-        {
-            m_wasOnExit = true;
+        // Keyboard players must explicitly press E
+        // while standing on the exit.
+        const bool keyboardExitRequested =
+            onExit &&
+            input.IsKeyPressed(SDL_SCANCODE_E);
 
+        // A transition now requires player intent.
+        if (onExit &&
+            (m_pendingExit || keyboardExitRequested))
+        {
             const int nextLevel =
                 (m_currentLevel == 1) ? 2 : 1;
 
-            LoadLevel(nextLevel);
+            if (LoadLevel(nextLevel))
+            {
+                SDL_Log("Interactive exit activated");
+                return SceneRequest::None;
+            }
+
+            m_pendingExit = false;
         }
-        else if (!onExit)
+
+        // If navigation was canceled or blocked before
+        // reaching the exit, discard the pending request.
+        if (m_pendingExit &&
+            !m_moveTarget.has_value())
         {
-            m_wasOnExit = false;
+            SDL_Log("Pending exit navigation cancelled");
+            m_pendingExit = false;
         }
+
 
         // ----------------------------------
         // Keyboard and automatic interactions
@@ -312,6 +386,15 @@ namespace DreamBox
             m_pendingInteraction = false;
             CancelMovePath();
             m_interactions.ClearSelection();
+        }
+
+        // Manual E interactions also cancel an unfinished
+        // exit-navigation request.
+        if (input.IsKeyPressed(SDL_SCANCODE_E) &&
+            m_pendingExit)
+        {
+            CancelMovePath();
+            m_pendingExit = false;
         }
 
         // Keep forwarding keyboard state every frame.
@@ -377,6 +460,45 @@ namespace DreamBox
             m_hoverPoint
         );
 
+
+        // ----------------------------------
+        // Interactive exit highlighting
+        // ----------------------------------
+        
+        const auto exitBounds =
+            m_tilemap.GetExitBounds();
+        
+        if (exitBounds.has_value())
+        {
+            const bool hovered =
+                m_hoverPoint.has_value() &&
+                SDL_PointInRectFloat(
+                    &m_hoverPoint.value(),
+                    &exitBounds.value()
+                );
+            
+            if (hovered)
+            {
+                // Green highlight when hovered.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    50, 230, 150, 255
+                );
+            }
+            else
+            {
+                // Subtle blue outline to identify exits.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    110, 145, 220, 255
+                );
+            }
+        
+            SDL_RenderRect(
+                renderer,
+                &exitBounds.value()
+            );
+        }
 
         const SDL_FRect sourceFrame = m_playerAnimator.GetSourceRect();
 
@@ -695,6 +817,18 @@ namespace DreamBox
 
         m_nextWaypoint = 0;
         m_moveTarget = destination;
+        m_currentLevel = level;
+
+        // Clear previous navigation state.
+        CancelMovePath();
+        
+        // Clear pending actions.
+        m_pendingInteraction = false;
+        m_pendingExit = false;
+        
+        // Clear hover position from previous level.
+        m_hoverPoint.reset();
+
 
         SDL_Log(
             "A*: route created with %zu grid nodes "
