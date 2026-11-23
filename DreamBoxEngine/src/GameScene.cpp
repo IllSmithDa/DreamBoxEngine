@@ -666,6 +666,7 @@ namespace DreamBox
         // reset player pos
         CancelMovePath();
         m_pendingInteraction = false;
+        m_pendingExit = false;
         m_hoverPoint.reset();
 
         SDL_Log(
