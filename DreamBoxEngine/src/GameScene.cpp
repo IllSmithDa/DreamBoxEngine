@@ -58,11 +58,8 @@ namespace DreamBox
 
     void GameScene::CancelMovePath()
     {
-        m_moveTarget.reset();
-        m_waypoints.clear();
-        m_nextWaypoint = 0;
+        m_navigation.Cancel();
     }
-
 
     SceneRequest GameScene::Update(
         const Input& input,
@@ -220,10 +217,12 @@ namespace DreamBox
             m_pendingInteraction = false;
             m_interactions.ClearSelection();
         }
-        else if (m_moveTarget.has_value())
+        else if (m_navigation.HasPath())
         {
-            // Follow our A* waypoints instead.
-            movement = CalculatePathMovement(deltaTime);
+            movement = m_navigation.CalculateMovement(
+                m_player.GetCollisionBounds(),
+                deltaTime
+            );
         }
 
         // ----------------------------------
@@ -259,56 +258,11 @@ namespace DreamBox
         // 5. Check pathfinding progress
         // ----------------------------------
 
-        if (m_moveTarget.has_value())
-        {
-            constexpr float movementEpsilon = 0.0001f;
-            constexpr float arrivalTolerance = 1.0f;
-        
-            const bool movementRequested =
-                std::fabs(movement.x) > movementEpsilon ||
-                std::fabs(movement.y) > movementEpsilon;
-        
-            const bool actuallyMoved =
-                std::fabs(movementX) > movementEpsilon ||
-                std::fabs(movementY) > movementEpsilon;
-        
-            // If collision completely blocks movement,
-            // cancel the path rather than retrying forever.
-            if (movementRequested && !actuallyMoved)
-            {
-                SDL_Log("A*: movement blocked, cancelling path");
-                CancelMovePath();
-            }
-            else if (m_nextWaypoint < m_waypoints.size())
-            {
-                const SDL_FRect hitbox =
-                    m_player.GetCollisionBounds();
-            
-                const SDL_FPoint center{
-                    hitbox.x + hitbox.w / 2.0f,
-                    hitbox.y + hitbox.h / 2.0f
-                };
-            
-                const SDL_FPoint& waypoint =
-                    m_waypoints[m_nextWaypoint];
-            
-                const float dx = waypoint.x - center.x;
-                const float dy = waypoint.y - center.y;
-            
-                const float distance =
-                    std::sqrt(dx * dx + dy * dy);
-            
-                if (distance <= arrivalTolerance)
-                {
-                    ++m_nextWaypoint;
-                
-                    if (m_nextWaypoint >= m_waypoints.size())
-                    {
-                        CancelMovePath();
-                    }
-                }
-            }
-        }
+        m_navigation.UpdateAfterMovement(
+            movement,
+            SDL_FPoint{movementX, movementY},
+            m_player.GetCollisionBounds()
+        );
 
 
         // ----------------------------------
@@ -364,7 +318,7 @@ namespace DreamBox
         // If navigation was canceled or blocked before
         // reaching the exit, discard the pending request.
         if (m_pendingExit &&
-            !m_moveTarget.has_value())
+            !m_navigation.HasPath())
         {
             SDL_Log("Pending exit navigation cancelled");
             m_pendingExit = false;
@@ -425,7 +379,7 @@ namespace DreamBox
                 m_pendingInteraction = false;
                 CancelMovePath();
             }
-            else if (!m_moveTarget.has_value())
+            else if (!m_navigation.HasPath())
             {
                 // The route ended or was blocked before
                 // we could reach interaction range.
@@ -547,37 +501,39 @@ namespace DreamBox
                 &collisionBounds
             );
         }
-
-
+        
         // ----------------------------------
         // Click-to-move target marker
         // ----------------------------------
 
-        if (m_moveTarget.has_value())
+        const auto& moveTarget =
+            m_navigation.GetDestination();
+
+        if (moveTarget.has_value())
         {
             SDL_SetRenderDrawColor(
                 renderer,
                 50, 230, 150, 255
             );
-        
+
             constexpr float markerSize = 6.0f;
-        
+
             // Horizontal line.
             SDL_RenderLine(
                 renderer,
-                m_moveTarget->x - markerSize,
-                m_moveTarget->y,
-                m_moveTarget->x + markerSize,
-                m_moveTarget->y
+                moveTarget->x - markerSize,
+                moveTarget->y,
+                moveTarget->x + markerSize,
+                moveTarget->y
             );
-        
+
             // Vertical line.
             SDL_RenderLine(
                 renderer,
-                m_moveTarget->x,
-                m_moveTarget->y - markerSize,
-                m_moveTarget->x,
-                m_moveTarget->y + markerSize
+                moveTarget->x,
+                moveTarget->y - markerSize,
+                moveTarget->x,
+                moveTarget->y + markerSize
             );
         }
 
@@ -791,8 +747,10 @@ namespace DreamBox
             return false;
         }
 
+        std::vector<SDL_FPoint> waypoints;
+
         // Convert the A* grid route into world positions.
-        m_waypoints.reserve(path.size() + 1);
+        waypoints.reserve(path.size() + 1);
 
         // First align with the starting tile center
         // when that position is physically walkable.
@@ -801,98 +759,40 @@ namespace DreamBox
 
         if (canStandAt(startCenter))
         {
-            m_waypoints.push_back(startCenter);
+            waypoints.push_back(startCenter);
         }
 
         // Skip grid index 0 because it is the start cell.
         for (std::size_t i = 1; i < path.size(); ++i)
         {
-            m_waypoints.push_back(
+            waypoints.push_back(
                 tileCenter(path[i])
             );
         }
 
         // Finish at the exact clicked position,
         // not just the center of the destination tile.
-        m_waypoints.push_back(destination);
+        waypoints.push_back(destination);
 
 
         // ----------------------------------
         // Finalize A* navigation path
         // ----------------------------------
-
-        m_nextWaypoint = 0;
-        m_moveTarget = destination;
-
         SDL_Log(
             "A*: route created with %zu grid nodes "
             "and %zu waypoints",
             path.size(),
-            m_waypoints.size()
+            waypoints.size()
+        );
+
+        m_navigation.Begin(
+            std::move(waypoints),
+            destination
         );
 
         return true;
 
-    }
 
-
-    SDL_FPoint GameScene::CalculatePathMovement(
-        float deltaTime
-    )
-    {
-        if (!m_moveTarget.has_value())
-        {
-            return SDL_FPoint{0.0f, 0.0f};
-        }
-
-        constexpr float moveSpeed = 200.0f;
-        constexpr float arrivalTolerance = 1.0f;
-
-        const SDL_FRect hitbox =
-            m_player.GetCollisionBounds();
-
-        const SDL_FPoint playerCenter{
-            hitbox.x + hitbox.w / 2.0f,
-            hitbox.y + hitbox.h / 2.0f
-        };
-
-        while (m_nextWaypoint < m_waypoints.size())
-        {
-            const SDL_FPoint& waypoint =
-                m_waypoints[m_nextWaypoint];
-
-            const float dx =
-                waypoint.x - playerCenter.x;
-
-            const float dy =
-                waypoint.y - playerCenter.y;
-
-            const float distance =
-                std::sqrt(dx * dx + dy * dy);
-
-            // Skip waypoints we've already reached.
-            if (distance <= arrivalTolerance)
-            {
-                ++m_nextWaypoint;
-                continue;
-            }
-
-            const float step =
-                std::min(
-                    moveSpeed * std::max(deltaTime, 0.0f),
-                    distance
-                );
-
-            return SDL_FPoint{
-                (dx / distance) * step,
-                (dy / distance) * step
-            };
-        }
-
-        // All waypoints completed.
-        CancelMovePath();
-
-        return SDL_FPoint{0.0f, 0.0f};
     }
 
 

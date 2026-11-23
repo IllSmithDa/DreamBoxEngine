@@ -98,7 +98,7 @@ add_executable(
     src/Door.cpp
     src/Chest.cpp
     src/Pathfinder.cpp
-
+    src/NavigationController.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -119,7 +119,7 @@ add_executable(
     include/DreamBox/Chest.h
     include/DreamBox/Door.h
     include/DreamBox/Pathfinder.h
-
+    include/DreamBox/NavigationController.h
 )   
 
 target_include_directories(

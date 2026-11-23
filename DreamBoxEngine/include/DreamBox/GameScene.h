@@ -12,6 +12,8 @@
 #include "DreamBox/SpriteAnimator.h"
 #include "DreamBox/Tilemap.h"
 #include "DreamBox/InteractionSystem.h"
+#include "DreamBox/NavigationController.h"
+
 
 namespace DreamBox
 {
@@ -66,24 +68,19 @@ namespace DreamBox
 
         InteractionSystem m_interactions;
 
-        std::optional<SDL_FPoint> m_moveTarget;
-
         std::optional<SDL_FPoint> m_hoverPoint;
 
         bool TrySetMovePath(const SDL_FPoint& destination);
 
-        SDL_FPoint CalculatePathMovement(float deltaTime);
-
         void CancelMovePath();
-
-        std::vector<SDL_FPoint> m_waypoints;
-
-        std::size_t m_nextWaypoint = 0;
 
         bool TryNavigateToSelectedObject();
 
         // click on interactable objects
         bool m_pendingInteraction = false;
         bool m_pendingExit = false;
+
+        // navigation
+        NavigationController m_navigation;
     };
 }
