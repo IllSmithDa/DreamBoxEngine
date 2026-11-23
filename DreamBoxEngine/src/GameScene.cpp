@@ -819,19 +819,18 @@ namespace DreamBox
         // ----------------------------------
         // Finalize A* navigation path
         // ----------------------------------
-        
+
         m_nextWaypoint = 0;
         m_moveTarget = destination;
-        
+
         SDL_Log(
             "A*: route created with %zu grid nodes "
             "and %zu waypoints",
             path.size(),
             m_waypoints.size()
         );
-    
+
         return true;
-    }
 
     }
 
