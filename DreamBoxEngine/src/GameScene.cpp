@@ -60,6 +60,16 @@ namespace DreamBox
         m_navigation.Cancel();
     }
 
+
+    void GameScene::CancelAutomaticAction()
+    {
+        // Stop navigation.
+        CancelMovePath();
+
+        // Discard the requested action.
+        m_pendingAction = PendingAction::None;
+    }
+
     SceneRequest GameScene::Update(
         const Input& input,
         float deltaTime
@@ -89,108 +99,12 @@ namespace DreamBox
         // ----------------------------------
         // Pointer selection and navigation
         // ----------------------------------
-
         if (input.WasPointPressed())
         {
-            const SDL_FPoint point =
-                input.GetPointPosition();
-
-            // A new click cancels previous actions.
-            CancelMovePath();
-            m_pendingInteraction = false;
-            m_pendingExit = false;
-
-            const auto exitBounds =
-                m_tilemap.GetExitBounds();
-
-            const bool clickedExit =
-                exitBounds.has_value() &&
-                SDL_PointInRectFloat(
-                    &point,
-                    &exitBounds.value()
-                );
-
-            if (clickedExit)
-            {
-                // Exit selection takes priority over
-                // ordinary floor movement.
-                m_interactions.ClearSelection();
-
-                const SDL_FRect playerHitbox =
-                    m_player.GetCollisionBounds();
-
-                // Already standing on the exit?
-                if (Collision::Intersects(
-                        playerHitbox,
-                        exitBounds.value()))
-                {
-                    const int nextLevel =
-                        (m_currentLevel == 1) ? 2 : 1;
-
-                    LoadLevel(nextLevel);
-                    return SceneRequest::None;
-                }
-
-                // Navigate toward the center of the exit.
-                const SDL_FPoint destination{
-                    exitBounds->x + exitBounds->w / 2.0f,
-                    exitBounds->y + exitBounds->h / 2.0f
-                };
-
-                if (TrySetMovePath(destination))
-                {
-                    // Set only after a valid route exists.
-                    m_pendingExit = true;
-
-                    SDL_Log(
-                        "Exit selected: navigating toward exit"
-                    );
-                }
-                else
-                {
-                    SDL_Log(
-                        "Exit selected but no route available"
-                    );
-                }
-            }
-            else
-            {
-                // Ordinary interactable objects.
-                const bool clickedObject =
-                    m_interactions.HandlePointerPress(
-                        point,
-                        m_player.GetCollisionBounds()
-                    );
-
-                if (clickedObject)
-                {
-                    const bool hasSelection =
-                        m_interactions
-                            .GetSelectedBounds()
-                            .has_value();
-
-                    if (hasSelection)
-                    {
-                        const bool interacted =
-                            m_interactions.TryInteractSelected(
-                                m_player.GetCollisionBounds()
-                            );
-
-                        if (!interacted &&
-                            TryNavigateToSelectedObject())
-                        {
-                            m_pendingInteraction = true;
-                        }
-                    }
-                }
-                else
-                {
-                    // Ordinary floor click.
-                    TrySetMovePath(point);
-                }
-            }
+            HandlePointerNavigation(
+                input.GetPointPosition()
+            );
         }
-
 
 
 
@@ -209,11 +123,12 @@ namespace DreamBox
             movement.x != 0.0f ||
             movement.y != 0.0f;
 
+        
         if (keyboardMoving)
         {
-            // Manual controls always take priority.
-            CancelMovePath();
-            m_pendingInteraction = false;
+            // Manual controls override automatic actions.
+            CancelAutomaticAction();
+        
             m_interactions.ClearSelection();
         }
         else if (m_navigation.HasPath())
@@ -223,6 +138,7 @@ namespace DreamBox
                 deltaTime
             );
         }
+
 
         // ----------------------------------
         // 4. Player movement and collision
@@ -292,104 +208,100 @@ namespace DreamBox
             );
         }
 
-        // Keyboard players must explicitly press E
-        // while standing on the exit.
+        // ----------------------------------
+        // Activate explicitly requested exits
+        // ----------------------------------
+
         const bool keyboardExitRequested =
             onExit &&
             input.IsKeyPressed(SDL_SCANCODE_E);
 
-        // A transition now requires player intent.
+        const bool pendingExitRequested =
+            m_pendingAction == PendingAction::LevelExit;
+
         if (onExit &&
-            (m_pendingExit || keyboardExitRequested))
+            (pendingExitRequested || keyboardExitRequested))
         {
             const int nextLevel =
                 (m_currentLevel == 1) ? 2 : 1;
-
+        
             if (LoadLevel(nextLevel))
             {
                 SDL_Log("Interactive exit activated");
                 return SceneRequest::None;
             }
-
-            m_pendingExit = false;
+        
+            // Transition failed.
+            CancelAutomaticAction();
         }
 
-        // If navigation was canceled or blocked before
-        // reaching the exit, discard the pending request.
-        if (m_pendingExit &&
+        // The route ended before reaching the exit.
+        if (m_pendingAction == PendingAction::LevelExit &&
             !m_navigation.HasPath())
         {
             SDL_Log("Pending exit navigation cancelled");
-            m_pendingExit = false;
+        
+            CancelAutomaticAction();
         }
 
-
         // ----------------------------------
-        // Keyboard and automatic interactions
+        // Keyboard interactions
         // ----------------------------------
 
         const bool interactPressed =
             input.IsKeyPressed(SDL_SCANCODE_E);
 
-        // Manual interaction cancels a pending
-        // automatic interaction to avoid triggering
-        // the same object twice.
-        if (interactPressed && m_pendingInteraction)
+        if (interactPressed &&
+            m_pendingAction != PendingAction::None)
         {
-            m_pendingInteraction = false;
-            CancelMovePath();
-            m_interactions.ClearSelection();
+            // Manual E takes priority over queued actions.
+            if (m_pendingAction ==
+                PendingAction::ObjectInteraction)
+            {
+                m_interactions.ClearSelection();
+            }
+        
+            CancelAutomaticAction();
         }
 
-        // Manual E interactions also cancel an unfinished
-        // exit-navigation request.
-        if (input.IsKeyPressed(SDL_SCANCODE_E) &&
-            m_pendingExit)
-        {
-            CancelMovePath();
-            m_pendingExit = false;
-        }
-
-        // Keep forwarding keyboard state every frame.
+        // Continue forwarding the keyboard state
+        // every frame for correct edge detection.
         m_interactions.Update(
             interactPressed,
             m_player.GetCollisionBounds()
         );
 
         // ----------------------------------
-        // Execute pending interaction
+        // Automatic object interaction
         // ----------------------------------
 
-        if (m_pendingInteraction)
+        if (m_pendingAction ==
+            PendingAction::ObjectInteraction)
         {
-            // The selected object might have been removed
-            // or become unavailable.
-            if (!m_interactions.GetSelectedBounds().has_value())
+            if (!m_interactions
+                    .GetSelectedBounds()
+                    .has_value())
             {
-                m_pendingInteraction = false;
-                CancelMovePath();
+                CancelAutomaticAction();
             }
             else if (m_interactions.TryInteractSelected(
                          m_player.GetCollisionBounds()))
             {
                 SDL_Log("Automatic interaction completed");
             
-                // Stop walking immediately after interacting.
-                m_pendingInteraction = false;
-                CancelMovePath();
+                CancelAutomaticAction();
             }
             else if (!m_navigation.HasPath())
             {
-                // The route ended or was blocked before
-                // we could reach interaction range.
                 SDL_Log(
                     "Automatic interaction cancelled: "
                     "destination not reached"
                 );
             
-                m_pendingInteraction = false;
+                CancelAutomaticAction();
             }
         }
+
 
         return SceneRequest::None;
 
@@ -617,17 +529,15 @@ namespace DreamBox
         }
 
         m_currentLevel = level;
-
-        // reset player pos
-        CancelMovePath();
-        m_pendingInteraction = false;
-        m_pendingExit = false;
+            
+        CancelAutomaticAction();
         m_hoverPoint.reset();
-
+            
         SDL_Log(
             "Successfully loaded level %d",
-                m_currentLevel
+            m_currentLevel
         );
+        
         return true;
     }
 
@@ -689,5 +599,110 @@ namespace DreamBox
             }
         );
     }
+
+    void GameScene::HandlePointerNavigation(
+        const SDL_FPoint& point
+    )
+    {
+        // Every new click replaces the previous command.
+        CancelAutomaticAction();
+
+        const SDL_FRect playerHitbox =
+            m_player.GetCollisionBounds();
+
+        // ----------------------------------
+        // 1. Check for a level exit
+        // ----------------------------------
+
+        const auto exitBounds =
+            m_tilemap.GetExitBounds();
+
+        if (exitBounds.has_value() &&
+            SDL_PointInRectFloat(
+                &point,
+                &exitBounds.value()))
+        {
+            m_interactions.ClearSelection();
+
+            // Already standing on the exit.
+            // The normal Update() transition check
+            // will activate it this frame.
+            if (Collision::Intersects(
+                    playerHitbox,
+                    exitBounds.value()))
+            {
+                m_pendingAction = PendingAction::LevelExit;
+                return;
+            }
+
+            // Navigate to the exit center.
+            const SDL_FPoint destination{
+                exitBounds->x + exitBounds->w / 2.0f,
+                exitBounds->y + exitBounds->h / 2.0f
+            };
+
+            if (TrySetMovePath(destination))
+            {
+                m_pendingAction = PendingAction::LevelExit;
+
+                SDL_Log(
+                    "Exit selected: navigating toward exit"
+                );
+            }
+            else
+            {
+                SDL_Log(
+                    "Exit selected but no route available"
+                );
+            }
+
+            return;
+        }
+
+        // ----------------------------------
+        // 2. Check for an interactable object
+        // ----------------------------------
+
+        const bool clickedObject =
+            m_interactions.HandlePointerPress(
+                point,
+                playerHitbox
+            );
+
+        if (clickedObject)
+        {
+            // Opened chests may consume a click
+            // without providing an active selection.
+            if (!m_interactions
+                    .GetSelectedBounds()
+                    .has_value())
+            {
+                return;
+            }
+
+            // First attempt an immediate interaction.
+            if (m_interactions.TryInteractSelected(
+                    playerHitbox))
+            {
+                return;
+            }
+
+            // Otherwise approach the selected object.
+            if (TryNavigateToSelectedObject())
+            {
+                m_pendingAction =
+                    PendingAction::ObjectInteraction;
+            }
+
+            return;
+        }
+
+        // ----------------------------------
+        // 3. Ordinary floor navigation
+        // ----------------------------------
+
+        TrySetMovePath(point);
+    }
+
 
 }

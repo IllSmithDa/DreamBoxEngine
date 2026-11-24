@@ -76,9 +76,21 @@ namespace DreamBox
 
         bool TryNavigateToSelectedObject();
 
-        // click on interactable objects
-        bool m_pendingInteraction = false;
-        bool m_pendingExit = false;
+
+        enum class PendingAction
+        {
+            None,
+            ObjectInteraction,
+            LevelExit
+        };
+
+        PendingAction m_pendingAction = PendingAction::None;
+
+        void CancelAutomaticAction();
+
+        void HandlePointerNavigation(
+            const SDL_FPoint& point
+        );
 
         // navigation
         NavigationController m_navigation;
