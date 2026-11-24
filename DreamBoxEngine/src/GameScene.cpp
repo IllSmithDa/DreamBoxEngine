@@ -1,6 +1,5 @@
 #include "DreamBox/GameScene.h"
 #include "DreamBox/Collision.h"
-#include "DreamBox/Pathfinder.h"
 #include <SDL3/SDL_filesystem.h>
 #include <string>
 #include <cmath>
@@ -637,163 +636,27 @@ namespace DreamBox
         const SDL_FPoint& destination
     )
     {
-        // A new click replaces the old route.
-        CancelMovePath();
+        return m_navigation.TryNavigateTo(
+            destination,
 
-        const SDL_FRect playerHitbox =
-            m_player.GetCollisionBounds();
+            // The actor's current collision dimensions.
+            m_player.GetCollisionBounds(),
 
-        constexpr float tileSize =
-            static_cast<float>(Tilemap::TileSize);
+            // Current map configuration.
+            Tilemap::Columns,
+            Tilemap::Rows,
+            static_cast<float>(Tilemap::TileSize),
 
-        constexpr float worldWidth =
-            Tilemap::Columns * tileSize;
-
-        constexpr float worldHeight =
-            Tilemap::Rows * tileSize;
-
-        // Can the player's entire collision hitbox
-        // occupy a given world-space position?
-        const auto canStandAt =
-            [&](const SDL_FPoint& center) -> bool
-        {
-            const SDL_FRect candidate{
-                center.x - playerHitbox.w / 2.0f,
-                center.y - playerHitbox.h / 2.0f,
-                playerHitbox.w,
-                playerHitbox.h
-            };
-
-            const bool insideWorld =
-                candidate.x >= 0.0f &&
-                candidate.y >= 0.0f &&
-                candidate.x + candidate.w <= worldWidth &&
-                candidate.y + candidate.h <= worldHeight;
-
-            if (!insideWorld)
+            // Scene-specific collision callback.
+            [this](const SDL_FRect& candidate)
             {
-                return false;
+                return
+                    m_tilemap.CollidesWithWall(candidate) ||
+                    m_interactions.CollidesWithSolid(candidate);
             }
-
-            return
-                !m_tilemap.CollidesWithWall(candidate) &&
-                !m_interactions.CollidesWithSolid(candidate);
-        };
-
-        // Reject destinations where the player cannot fit.
-        if (!canStandAt(destination))
-        {
-            SDL_Log("A*: destination is blocked");
-            return false;
-        }
-
-        // Current position based on collision hitbox.
-        const SDL_FPoint playerCenter{
-            playerHitbox.x + playerHitbox.w / 2.0f,
-            playerHitbox.y + playerHitbox.h / 2.0f
-        };
-
-        // Convert world coordinates into grid coordinates.
-        const GridPoint start{
-            static_cast<int>(playerCenter.x / tileSize),
-            static_cast<int>(playerCenter.y / tileSize)
-        };
-
-        const GridPoint goal{
-            static_cast<int>(destination.x / tileSize),
-            static_cast<int>(destination.y / tileSize)
-        };
-
-        // Convert a grid position back to a tile center.
-        const auto tileCenter =
-            [&](const GridPoint& cell) -> SDL_FPoint
-        {
-            return SDL_FPoint{
-                (static_cast<float>(cell.x) + 0.5f) *
-                    tileSize,
-                (static_cast<float>(cell.y) + 0.5f) *
-                    tileSize
-            };
-        };
-
-        // A* asks whether each grid cell is walkable.
-        const auto isWalkable =
-            [&](int column, int row) -> bool
-        {
-            // The player already occupies the start cell.
-            // Its exact position may not be tile-centered.
-            if (column == start.x && row == start.y)
-            {
-                return true;
-            }
-
-            return canStandAt(
-                tileCenter(GridPoint{column, row})
-            );
-        };
-
-        const std::vector<GridPoint> path =
-            Pathfinder::FindPath(
-                start,
-                goal,
-                Tilemap::Columns,
-                Tilemap::Rows,
-                isWalkable
-            );
-
-        if (path.empty())
-        {
-            SDL_Log("A*: no reachable path found");
-            return false;
-        }
-
-        std::vector<SDL_FPoint> waypoints;
-
-        // Convert the A* grid route into world positions.
-        waypoints.reserve(path.size() + 1);
-
-        // First align with the starting tile center
-        // when that position is physically walkable.
-        const SDL_FPoint startCenter =
-            tileCenter(start);
-
-        if (canStandAt(startCenter))
-        {
-            waypoints.push_back(startCenter);
-        }
-
-        // Skip grid index 0 because it is the start cell.
-        for (std::size_t i = 1; i < path.size(); ++i)
-        {
-            waypoints.push_back(
-                tileCenter(path[i])
-            );
-        }
-
-        // Finish at the exact clicked position,
-        // not just the center of the destination tile.
-        waypoints.push_back(destination);
-
-
-        // ----------------------------------
-        // Finalize A* navigation path
-        // ----------------------------------
-        SDL_Log(
-            "A*: route created with %zu grid nodes "
-            "and %zu waypoints",
-            path.size(),
-            waypoints.size()
         );
-
-        m_navigation.Begin(
-            std::move(waypoints),
-            destination
-        );
-
-        return true;
-
-
     }
+
 
 
     bool GameScene::TryNavigateToSelectedObject()

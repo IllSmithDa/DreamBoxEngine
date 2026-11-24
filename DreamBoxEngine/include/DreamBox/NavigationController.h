@@ -2,7 +2,7 @@
 #pragma once
 
 #include <SDL3/SDL_rect.h>
-
+#include <functional>
 #include <cstddef>
 #include <optional>
 #include <vector>
@@ -33,6 +33,18 @@ namespace DreamBox
             const SDL_FPoint& requestedMovement,
             const SDL_FPoint& actualMovement,
             const SDL_FRect& playerHitbox
+        );
+
+        using IsBlocked =
+            std::function<bool(const SDL_FRect&)>;
+            
+        bool TryNavigateTo(
+            SDL_FPoint destination,
+            const SDL_FRect& actorHitbox,
+            int columns,
+            int rows,
+            float tileSize,
+            const IsBlocked& isBlocked
         );
 
     private:

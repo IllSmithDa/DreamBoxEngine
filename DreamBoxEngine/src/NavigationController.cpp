@@ -1,9 +1,11 @@
 
 #include "DreamBox/NavigationController.h"
-
+#include "DreamBox/Pathfinder.h"
+#include <SDL3/SDL_log.h>
+#include <vector>
+#include <utility>
 #include <algorithm>
 #include <cmath>
-#include <utility>
 
 namespace DreamBox
 {

@@ -320,3 +320,31 @@ add_test(
     COMMAND PathfinderTests
 )
 
+# ==================================
+# NavigationController Tests
+# ==================================
+
+add_executable(
+    NavigationControllerTests
+
+    ../tests/NavigationControllerTests.cpp
+    src/NavigationController.cpp
+    src/Pathfinder.cpp
+)
+
+target_include_directories(
+    NavigationControllerTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(
+    NavigationControllerTests
+    PRIVATE
+    SDL3::SDL3
+)
+
+add_test(
+    NAME NavigationControllerTests
+    COMMAND NavigationControllerTests
+)
