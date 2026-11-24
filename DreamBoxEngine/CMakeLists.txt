@@ -99,6 +99,7 @@ add_executable(
     src/Chest.cpp
     src/Pathfinder.cpp
     src/NavigationController.cpp
+    src/Inventory.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -120,6 +121,8 @@ add_executable(
     include/DreamBox/Door.h
     include/DreamBox/Pathfinder.h
     include/DreamBox/NavigationController.h
+    include/DreamBox/Inventory.h
+    include/DreamBox/Item.h
 )   
 
 target_include_directories(
@@ -347,4 +350,27 @@ target_link_libraries(
 add_test(
     NAME NavigationControllerTests
     COMMAND NavigationControllerTests
+)
+
+
+# ==================================
+# Inventory Tests
+# ==================================
+
+add_executable(
+    InventoryTests
+
+    ../tests/InventoryTests.cpp
+    src/Inventory.cpp
+)
+
+target_include_directories(
+    InventoryTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+add_test(
+    NAME InventoryTests
+    COMMAND InventoryTests
 )
