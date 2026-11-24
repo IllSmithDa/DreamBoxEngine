@@ -269,19 +269,17 @@ add_test(
 # ==================================
 # Interaction Tests
 # ==================================
-
 add_executable(
     InteractionTests
 
     ../tests/InteractionTests.cpp
-
     src/InteractionSystem.cpp
     src/Chest.cpp
     src/Door.cpp
     src/Collision.cpp
     src/GameObject.cpp
+    src/Inventory.cpp
 )
-
 target_include_directories(
     InteractionTests
     PRIVATE
