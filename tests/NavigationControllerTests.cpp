@@ -16,6 +16,185 @@ void Require(bool condition, const char* message)
     }
 }
 
+
+void TestApproachPointNavigation()
+{
+    using namespace DreamBox;
+
+    NavigationController navigation;
+
+    // Player's collision hitbox: 48 x 32.
+    SDL_FRect player{
+        36.0f, 124.0f,
+        48.0f, 32.0f
+    };
+
+    // Solid chest-like target.
+    const SDL_FRect target{
+        280.0f, 120.0f,
+        40.0f, 40.0f
+    };
+
+    const auto isBlocked =
+        [&](const SDL_FRect& candidate)
+    {
+        return SDL_HasRectIntersectionFloat(
+            &candidate,
+            &target
+        );
+    };
+
+    constexpr float range = 70.0f;
+
+    // ----------------------------------
+    // Test successful approach planning
+    // ----------------------------------
+
+    Require(
+        navigation.TryNavigateWithinRange(
+            target,
+            player,
+            range,
+            12, 8, 40.0f,
+            isBlocked
+        ),
+        "Expected a reachable approach point"
+    );
+
+    Require(
+        navigation.HasPath(),
+        "Approach should create an active route"
+    );
+
+    const auto destination =
+        navigation.GetDestination();
+
+    Require(
+        destination.has_value(),
+        "Approach destination should exist"
+    );
+
+    const float targetCenterX =
+        target.x + target.w / 2.0f;
+
+    const float targetCenterY =
+        target.y + target.h / 2.0f;
+
+    const float dx =
+        destination->x - targetCenterX;
+
+    const float dy =
+        destination->y - targetCenterY;
+
+    Require(
+        dx * dx + dy * dy <= range * range,
+        "Approach point is outside interaction range"
+    );
+
+    const SDL_FRect destinationHitbox{
+        destination->x - player.w / 2.0f,
+        destination->y - player.h / 2.0f,
+        player.w,
+        player.h
+    };
+
+    Require(
+        !isBlocked(destinationHitbox),
+        "Approach point overlaps the solid target"
+    );
+
+    std::cout << "PASS: Approach-point selection\n";
+
+    // ----------------------------------
+    // Test that movement reaches the target
+    // ----------------------------------
+
+    for (int frame = 0;
+         frame < 500 && navigation.HasPath();
+         ++frame)
+    {
+        const SDL_FPoint movement =
+            navigation.CalculateMovement(
+                player,
+                0.05f
+            );
+
+        const SDL_FRect next{
+            player.x + movement.x,
+            player.y + movement.y,
+            player.w,
+            player.h
+        };
+
+        Require(
+            !isBlocked(next),
+            "Approach movement crossed solid target"
+        );
+
+        player = next;
+
+        navigation.UpdateAfterMovement(
+            movement,
+            movement,
+            player
+        );
+    }
+
+    Require(
+        !navigation.HasPath(),
+        "Approach route should finish"
+    );
+
+    const float finalCenterX =
+        player.x + player.w / 2.0f;
+
+    const float finalCenterY =
+        player.y + player.h / 2.0f;
+
+    const float finalDx =
+        finalCenterX - targetCenterX;
+
+    const float finalDy =
+        finalCenterY - targetCenterY;
+
+    Require(
+        finalDx * finalDx + finalDy * finalDy
+            <= range * range,
+        "Actor stopped outside interaction range"
+    );
+
+    std::cout << "PASS: Automatic approach movement\n";
+
+    // ----------------------------------
+    // Test unreachable approach points
+    // ----------------------------------
+
+    const auto alwaysBlocked =
+        [](const SDL_FRect&)
+    {
+        return true;
+    };
+
+    Require(
+        !navigation.TryNavigateWithinRange(
+            target,
+            player,
+            range,
+            12, 8, 40.0f,
+            alwaysBlocked
+        ),
+        "Should reject an unreachable approach"
+    );
+
+    Require(
+        !navigation.HasPath(),
+        "Failed approach must not leave an active route"
+    );
+
+    std::cout << "PASS: Unreachable approach\n";
+}
+
+
 int main()
 {
     try
@@ -149,6 +328,8 @@ int main()
         );
 
         std::cout << "PASS: Cancellation\n";
+
+        TestApproachPointNavigation();
 
         std::cout
             << "\nAll NavigationController tests passed!\n";

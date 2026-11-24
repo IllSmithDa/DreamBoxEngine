@@ -37,10 +37,21 @@ namespace DreamBox
 
         using IsBlocked =
             std::function<bool(const SDL_FRect&)>;
-            
+
         bool TryNavigateTo(
             SDL_FPoint destination,
             const SDL_FRect& actorHitbox,
+            int columns,
+            int rows,
+            float tileSize,
+            const IsBlocked& isBlocked
+        );
+
+
+        bool TryNavigateWithinRange(
+            const SDL_FRect& targetBounds,
+            const SDL_FRect& actorHitbox,
+            float interactionRange,
             int columns,
             int rows,
             float tileSize,

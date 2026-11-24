@@ -164,7 +164,7 @@ namespace DreamBox
     {
         // New navigation replaces any previous route.
         Cancel();
-    
+
         if (columns <= 0 || rows <= 0 ||
             tileSize <= 0.0f ||
             actorHitbox.w <= 0.0f ||
@@ -173,14 +173,14 @@ namespace DreamBox
         {
             return false;
         }
-    
+
         const float worldWidth = columns * tileSize;
         const float worldHeight = rows * tileSize;
-    
+
         // ----------------------------------
         // 1. Check whether the actor fits
         // ----------------------------------
-    
+
         const auto canStandAt =
             [&](SDL_FPoint center) -> bool
         {
@@ -190,7 +190,7 @@ namespace DreamBox
                 actorHitbox.w,
                 actorHitbox.h
             };
-        
+
             if (candidate.x < 0.0f ||
                 candidate.y < 0.0f ||
                 candidate.x + candidate.w > worldWidth ||
@@ -198,35 +198,35 @@ namespace DreamBox
             {
                 return false;
             }
-        
+
             return !isBlocked(candidate);
         };
-    
+
         if (!canStandAt(destination))
         {
             SDL_Log("A*: destination is blocked");
             return false;
         }
-    
+
         // ----------------------------------
         // 2. Convert world positions to grid
         // ----------------------------------
-    
+
         const SDL_FPoint startCenter{
             actorHitbox.x + actorHitbox.w / 2.0f,
             actorHitbox.y + actorHitbox.h / 2.0f
         };
-    
+
         const GridPoint start{
             static_cast<int>(startCenter.x / tileSize),
             static_cast<int>(startCenter.y / tileSize)
         };
-    
+
         const GridPoint goal{
             static_cast<int>(destination.x / tileSize),
             static_cast<int>(destination.y / tileSize)
         };
-    
+
         const auto tileCenter =
             [tileSize](GridPoint cell) -> SDL_FPoint
         {
@@ -237,11 +237,11 @@ namespace DreamBox
                     tileSize
             };
         };
-    
+
         // ----------------------------------
         // 3. Check grid walkability
         // ----------------------------------
-    
+
         const auto isWalkable =
             [&](int column, int row) -> bool
         {
@@ -250,16 +250,16 @@ namespace DreamBox
             {
                 return true;
             }
-        
+
             return canStandAt(
                 tileCenter({column, row})
             );
         };
-    
+
         // ----------------------------------
         // 4. Calculate A* route
         // ----------------------------------
-    
+
         const std::vector<GridPoint> path =
             Pathfinder::FindPath(
                 start,
@@ -268,28 +268,28 @@ namespace DreamBox
                 rows,
                 isWalkable
             );
-        
+
         if (path.empty())
         {
             SDL_Log("A*: no reachable path found");
             return false;
         }
-    
+
         // ----------------------------------
         // 5. Convert path into waypoints
         // ----------------------------------
-    
+
         std::vector<SDL_FPoint> waypoints;
         waypoints.reserve(path.size() + 1);
-    
+
         const SDL_FPoint firstTileCenter =
             tileCenter(start);
-    
+
         if (canStandAt(firstTileCenter))
         {
             waypoints.push_back(firstTileCenter);
         }
-    
+
         // Skip starting grid node.
         for (std::size_t i = 1; i < path.size(); ++i)
         {
@@ -297,27 +297,196 @@ namespace DreamBox
                 tileCenter(path[i])
             );
         }
-    
+
         // Arrive at the exact clicked location.
         waypoints.push_back(destination);
-    
+
         SDL_Log(
             "A*: route created with %zu grid nodes "
             "and %zu waypoints",
             path.size(),
             waypoints.size()
         );
-    
+
         // ----------------------------------
         // 6. Begin navigation
         // ----------------------------------
-    
+
         Begin(
             std::move(waypoints),
             destination
         );
-    
+
         return true;
     }
+
+    bool NavigationController::TryNavigateWithinRange(
+        const SDL_FRect& targetBounds,
+        const SDL_FRect& actorHitbox,
+        float interactionRange,
+        int columns,
+        int rows,
+        float tileSize,
+        const IsBlocked& isBlocked
+    )
+    {
+        // Replace any existing navigation.
+        Cancel();
+
+        if (columns <= 0 || rows <= 0 ||
+            tileSize <= 0.0f ||
+            interactionRange < 0.0f ||
+            actorHitbox.w <= 0.0f ||
+            actorHitbox.h <= 0.0f ||
+            !isBlocked)
+        {
+            return false;
+        }
+
+        const float worldWidth =
+            columns * tileSize;
+
+        const float worldHeight =
+            rows * tileSize;
+
+        const float rangeSquared =
+            interactionRange * interactionRange;
+
+        // ----------------------------------
+        // 1. Calculate current positions
+        // ----------------------------------
+
+        const SDL_FPoint actorCenter{
+            actorHitbox.x + actorHitbox.w / 2.0f,
+            actorHitbox.y + actorHitbox.h / 2.0f
+        };
+
+        const SDL_FPoint targetCenter{
+            targetBounds.x + targetBounds.w / 2.0f,
+            targetBounds.y + targetBounds.h / 2.0f
+        };
+
+        struct ApproachCandidate
+        {
+            SDL_FPoint position{};
+            float distanceSquared = 0.0f;
+        };
+
+        std::vector<ApproachCandidate> candidates;
+
+        // ----------------------------------
+        // 2. Find valid positions near target
+        // ----------------------------------
+
+        for (int row = 0; row < rows; ++row)
+        {
+            for (int column = 0; column < columns; ++column)
+            {
+                // Center of the candidate tile.
+                const SDL_FPoint position{
+                    (static_cast<float>(column) + 0.5f) *
+                        tileSize,
+                    (static_cast<float>(row) + 0.5f) *
+                        tileSize
+                };
+
+                // Match InteractionSystem's
+                // center-to-center distance rule.
+                const float targetDx =
+                    position.x - targetCenter.x;
+
+                const float targetDy =
+                    position.y - targetCenter.y;
+
+                const float distanceToTargetSquared =
+                    targetDx * targetDx +
+                    targetDy * targetDy;
+
+                if (distanceToTargetSquared > rangeSquared)
+                {
+                    continue;
+                }
+
+                // Does the actor's entire hitbox fit here?
+                const SDL_FRect candidateHitbox{
+                    position.x - actorHitbox.w / 2.0f,
+                    position.y - actorHitbox.h / 2.0f,
+                    actorHitbox.w,
+                    actorHitbox.h
+                };
+
+                const bool insideWorld =
+                    candidateHitbox.x >= 0.0f &&
+                    candidateHitbox.y >= 0.0f &&
+                    candidateHitbox.x + candidateHitbox.w
+                        <= worldWidth &&
+                    candidateHitbox.y + candidateHitbox.h
+                        <= worldHeight;
+
+                if (!insideWorld ||
+                    isBlocked(candidateHitbox))
+                {
+                    continue;
+                }
+
+                // Rank candidates by distance
+                // from the actor's current position.
+                const float actorDx =
+                    position.x - actorCenter.x;
+
+                const float actorDy =
+                    position.y - actorCenter.y;
+
+                candidates.push_back({
+                    position,
+                    actorDx * actorDx + actorDy * actorDy
+                });
+            }
+        }
+
+        // ----------------------------------
+        // 3. Try closest candidates first
+        // ----------------------------------
+
+        std::sort(
+            candidates.begin(),
+            candidates.end(),
+            [](const ApproachCandidate& a,
+               const ApproachCandidate& b)
+            {
+                return a.distanceSquared <
+                       b.distanceSquared;
+            }
+        );
+
+        // ----------------------------------
+        // 4. Find a reachable approach point
+        // ----------------------------------
+
+        for (const ApproachCandidate& candidate : candidates)
+        {
+            if (TryNavigateTo(
+                    candidate.position,
+                    actorHitbox,
+                    columns,
+                    rows,
+                    tileSize,
+                    isBlocked))
+            {
+                SDL_Log(
+                    "Approach point selected: %.1f, %.1f",
+                    candidate.position.x,
+                    candidate.position.y
+                );
+
+                return true;
+            }
+        }
+
+        SDL_Log("No reachable approach point found");
+
+        return false;
+    }
+
 
 }

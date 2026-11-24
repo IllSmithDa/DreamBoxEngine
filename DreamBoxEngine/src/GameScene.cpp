@@ -656,9 +656,7 @@ namespace DreamBox
             }
         );
     }
-
-
-
+    
     bool GameScene::TryNavigateToSelectedObject()
     {
         const auto selectedBounds =
@@ -669,120 +667,26 @@ namespace DreamBox
             return false;
         }
 
-        constexpr float tileSize =
-            static_cast<float>(Tilemap::TileSize);
-
         constexpr float interactionRange = 70.0f;
-        constexpr float rangeSquared =
-            interactionRange * interactionRange;
 
-        const SDL_FRect playerHitbox =
-            m_player.GetCollisionBounds();
+        return m_navigation.TryNavigateWithinRange(
+            selectedBounds.value(),
 
-        const SDL_FPoint playerCenter{
-            playerHitbox.x + playerHitbox.w / 2.0f,
-            playerHitbox.y + playerHitbox.h / 2.0f
-        };
+            m_player.GetCollisionBounds(),
 
-        const SDL_FPoint objectCenter{
-            selectedBounds->x + selectedBounds->w / 2.0f,
-            selectedBounds->y + selectedBounds->h / 2.0f
-        };
+            interactionRange,
 
-        struct ApproachCandidate
-        {
-            SDL_FPoint position{};
-            float distanceFromPlayer = 0.0f;
-        };
+            Tilemap::Columns,
+            Tilemap::Rows,
+            static_cast<float>(Tilemap::TileSize),
 
-        std::vector<ApproachCandidate> candidates;
-
-        // ----------------------------------
-        // Find tile centers near the object
-        // ----------------------------------
-
-        for (int row = 0; row < Tilemap::Rows; ++row)
-        {
-            for (int column = 0;
-                 column < Tilemap::Columns;
-                 ++column)
+            [this](const SDL_FRect& candidate)
             {
-                const SDL_FPoint position{
-                    (static_cast<float>(column) + 0.5f) *
-                        tileSize,
-                    (static_cast<float>(row) + 0.5f) *
-                        tileSize
-                };
-
-                const float dx =
-                    position.x - objectCenter.x;
-
-                const float dy =
-                    position.y - objectCenter.y;
-
-                const float distanceSquared =
-                    dx * dx + dy * dy;
-
-                // This tile center must be within
-                // the object's interaction range.
-                if (distanceSquared > rangeSquared)
-                {
-                    continue;
-                }
-
-                const float playerDx =
-                    position.x - playerCenter.x;
-
-                const float playerDy =
-                    position.y - playerCenter.y;
-
-                const float playerDistanceSquared =
-                    playerDx * playerDx +
-                    playerDy * playerDy;
-
-                candidates.push_back({
-                    position,
-                    playerDistanceSquared
-                });
-            }
-        }
-
-        // ----------------------------------
-        // Try nearby candidates first
-        // ----------------------------------
-
-        std::sort(
-            candidates.begin(),
-            candidates.end(),
-            [](const ApproachCandidate& a,
-               const ApproachCandidate& b)
-            {
-                return a.distanceFromPlayer <
-                       b.distanceFromPlayer;
+                return
+                    m_tilemap.CollidesWithWall(candidate) ||
+                    m_interactions.CollidesWithSolid(candidate);
             }
         );
-
-        for (const ApproachCandidate& candidate : candidates)
-        {
-            // Reuse our existing collision-aware
-            // A* navigation method.
-            if (TrySetMovePath(candidate.position))
-            {
-                SDL_Log(
-                    "Approach point selected: %.1f, %.1f",
-                    candidate.position.x,
-                    candidate.position.y
-                );
-
-                return true;
-            }
-        }
-
-        SDL_Log(
-            "No reachable approach point found"
-        );
-
-        return false;
     }
 
 }
