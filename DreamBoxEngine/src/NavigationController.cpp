@@ -151,4 +151,173 @@ namespace DreamBox
             }
         }
     }
+
+
+    bool NavigationController::TryNavigateTo(
+        SDL_FPoint destination,
+        const SDL_FRect& actorHitbox,
+        int columns,
+        int rows,
+        float tileSize,
+        const IsBlocked& isBlocked
+    )
+    {
+        // New navigation replaces any previous route.
+        Cancel();
+    
+        if (columns <= 0 || rows <= 0 ||
+            tileSize <= 0.0f ||
+            actorHitbox.w <= 0.0f ||
+            actorHitbox.h <= 0.0f ||
+            !isBlocked)
+        {
+            return false;
+        }
+    
+        const float worldWidth = columns * tileSize;
+        const float worldHeight = rows * tileSize;
+    
+        // ----------------------------------
+        // 1. Check whether the actor fits
+        // ----------------------------------
+    
+        const auto canStandAt =
+            [&](SDL_FPoint center) -> bool
+        {
+            const SDL_FRect candidate{
+                center.x - actorHitbox.w / 2.0f,
+                center.y - actorHitbox.h / 2.0f,
+                actorHitbox.w,
+                actorHitbox.h
+            };
+        
+            if (candidate.x < 0.0f ||
+                candidate.y < 0.0f ||
+                candidate.x + candidate.w > worldWidth ||
+                candidate.y + candidate.h > worldHeight)
+            {
+                return false;
+            }
+        
+            return !isBlocked(candidate);
+        };
+    
+        if (!canStandAt(destination))
+        {
+            SDL_Log("A*: destination is blocked");
+            return false;
+        }
+    
+        // ----------------------------------
+        // 2. Convert world positions to grid
+        // ----------------------------------
+    
+        const SDL_FPoint startCenter{
+            actorHitbox.x + actorHitbox.w / 2.0f,
+            actorHitbox.y + actorHitbox.h / 2.0f
+        };
+    
+        const GridPoint start{
+            static_cast<int>(startCenter.x / tileSize),
+            static_cast<int>(startCenter.y / tileSize)
+        };
+    
+        const GridPoint goal{
+            static_cast<int>(destination.x / tileSize),
+            static_cast<int>(destination.y / tileSize)
+        };
+    
+        const auto tileCenter =
+            [tileSize](GridPoint cell) -> SDL_FPoint
+        {
+            return {
+                (static_cast<float>(cell.x) + 0.5f) *
+                    tileSize,
+                (static_cast<float>(cell.y) + 0.5f) *
+                    tileSize
+            };
+        };
+    
+        // ----------------------------------
+        // 3. Check grid walkability
+        // ----------------------------------
+    
+        const auto isWalkable =
+            [&](int column, int row) -> bool
+        {
+            // The actor already occupies its start cell.
+            if (column == start.x && row == start.y)
+            {
+                return true;
+            }
+        
+            return canStandAt(
+                tileCenter({column, row})
+            );
+        };
+    
+        // ----------------------------------
+        // 4. Calculate A* route
+        // ----------------------------------
+    
+        const std::vector<GridPoint> path =
+            Pathfinder::FindPath(
+                start,
+                goal,
+                columns,
+                rows,
+                isWalkable
+            );
+        
+        if (path.empty())
+        {
+            SDL_Log("A*: no reachable path found");
+            return false;
+        }
+    
+        // ----------------------------------
+        // 5. Convert path into waypoints
+        // ----------------------------------
+    
+        std::vector<SDL_FPoint> waypoints;
+        waypoints.reserve(path.size() + 1);
+    
+        const SDL_FPoint firstTileCenter =
+            tileCenter(start);
+    
+        if (canStandAt(firstTileCenter))
+        {
+            waypoints.push_back(firstTileCenter);
+        }
+    
+        // Skip starting grid node.
+        for (std::size_t i = 1; i < path.size(); ++i)
+        {
+            waypoints.push_back(
+                tileCenter(path[i])
+            );
+        }
+    
+        // Arrive at the exact clicked location.
+        waypoints.push_back(destination);
+    
+        SDL_Log(
+            "A*: route created with %zu grid nodes "
+            "and %zu waypoints",
+            path.size(),
+            waypoints.size()
+        );
+    
+        // ----------------------------------
+        // 6. Begin navigation
+        // ----------------------------------
+    
+        Begin(
+            std::move(waypoints),
+            destination
+        );
+    
+        return true;
+    }
+
 }
