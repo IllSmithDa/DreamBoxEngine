@@ -195,6 +195,97 @@ void TestApproachPointNavigation()
 }
 
 
+void TestNearWallDestination()
+{
+    NavigationController navigation;
+
+    const SDL_FRect actor{
+        36.0f, 124.0f, 48.0f, 32.0f
+    };
+
+    const SDL_FRect wall{
+        160.0f, 0.0f, 40.0f, 320.0f
+    };
+
+    const auto isBlocked =
+        [&](const SDL_FRect& candidate)
+    {
+        return SDL_HasRectIntersectionFloat(
+            &candidate, &wall
+        );
+    };
+
+    // This is a valid destination, but its
+    // grid tile center (140, 140) is blocked.
+    Require(
+        navigation.TryNavigateTo(
+            {135.0f, 140.0f},
+            actor, 10, 8, 40.0f,
+            isBlocked
+        ),
+        "Valid near-wall goal should be reachable"
+    );
+
+    navigation.Cancel();
+
+    // This click is on free floor, but the
+    // actor's hitbox cannot be centered here.
+    const SDL_FPoint click{150.0f, 140.0f};
+
+    Require(
+        navigation.TryNavigateNear(
+            click,
+            actor, 10, 8, 40.0f,
+            isBlocked,
+            32.0f
+        ),
+        "Expected a nearby valid destination"
+    );
+
+    const auto destination =
+        navigation.GetDestination();
+
+    Require(
+        destination.has_value(),
+        "Snapped destination should exist"
+    );
+
+    const SDL_FRect finalHitbox{
+        destination->x - actor.w / 2.0f,
+        destination->y - actor.h / 2.0f,
+        actor.w,
+        actor.h
+    };
+
+    Require(
+        !isBlocked(finalHitbox),
+        "Snapped destination must not overlap wall"
+    );
+
+    const float dx = destination->x - click.x;
+    const float dy = destination->y - click.y;
+
+    Require(
+        dx * dx + dy * dy <= 32.0f * 32.0f,
+        "Snapped destination is too far from click"
+    );
+
+    // Clicking directly inside the wall
+    // must still be rejected.
+    Require(
+        !navigation.TryNavigateNear(
+            {170.0f, 140.0f},
+            actor, 10, 8, 40.0f,
+            isBlocked,
+            32.0f
+        ),
+        "Click inside wall should be rejected"
+    );
+
+    std::cout << "PASS: Near-wall navigation\n";
+}
+
+
 int main()
 {
     try
@@ -330,6 +421,9 @@ int main()
         std::cout << "PASS: Cancellation\n";
 
         TestApproachPointNavigation();
+
+        // precision navigation test
+        TestNearWallDestination();
 
         std::cout
             << "\nAll NavigationController tests passed!\n";

@@ -632,31 +632,32 @@ namespace DreamBox
     }
 
 
+
     bool GameScene::TrySetMovePath(
         const SDL_FPoint& destination
     )
     {
-        return m_navigation.TryNavigateTo(
+        return m_navigation.TryNavigateNear(
             destination,
-
-            // The actor's current collision dimensions.
             m_player.GetCollisionBounds(),
-
-            // Current map configuration.
+        
             Tilemap::Columns,
             Tilemap::Rows,
             static_cast<float>(Tilemap::TileSize),
-
-            // Scene-specific collision callback.
+        
             [this](const SDL_FRect& candidate)
             {
                 return
                     m_tilemap.CollidesWithWall(candidate) ||
                     m_interactions.CollidesWithSolid(candidate);
-            }
+            },
+        
+            // Maximum distance from original click.
+            32.0f
         );
     }
-    
+
+
     bool GameScene::TryNavigateToSelectedObject()
     {
         const auto selectedBounds =

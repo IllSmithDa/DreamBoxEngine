@@ -204,7 +204,6 @@ namespace DreamBox
 
         if (!canStandAt(destination))
         {
-            SDL_Log("A*: destination is blocked");
             return false;
         }
 
@@ -245,16 +244,24 @@ namespace DreamBox
         const auto isWalkable =
             [&](int column, int row) -> bool
         {
-            // The actor already occupies its start cell.
+            // The actor already occupies its starting cell.
             if (column == start.x && row == start.y)
             {
                 return true;
             }
-
+        
+            // The destination may be valid even when
+            // the center of its grid cell is blocked.
+            if (column == goal.x && row == goal.y)
+            {
+                return canStandAt(destination);
+            }
+        
             return canStandAt(
                 tileCenter({column, row})
             );
         };
+
 
         // ----------------------------------
         // 4. Calculate A* route
@@ -271,7 +278,6 @@ namespace DreamBox
 
         if (path.empty())
         {
-            SDL_Log("A*: no reachable path found");
             return false;
         }
 
@@ -291,14 +297,26 @@ namespace DreamBox
         }
 
         // Skip starting grid node.
+
         for (std::size_t i = 1; i < path.size(); ++i)
         {
-            waypoints.push_back(
-                tileCenter(path[i])
-            );
+            const SDL_FPoint center =
+                tileCenter(path[i]);
+        
+            const bool isFinalCell =
+                i + 1 == path.size();
+        
+            // Avoid forcing the actor through a blocked
+            // tile center when the precise goal is valid.
+            if (isFinalCell && !canStandAt(center))
+            {
+                continue;
+            }
+        
+            waypoints.push_back(center);
         }
 
-        // Arrive at the exact clicked location.
+        // The last waypoint remains the exact destination.
         waypoints.push_back(destination);
 
         SDL_Log(
@@ -485,6 +503,161 @@ namespace DreamBox
 
         SDL_Log("No reachable approach point found");
 
+        return false;
+    }
+
+
+    bool NavigationController::TryNavigateNear(
+        SDL_FPoint requestedDestination,
+        const SDL_FRect& actorHitbox,
+        int columns,
+        int rows,
+        float tileSize,
+        const IsBlocked& isBlocked,
+        float maxSnapDistance
+    )
+    {
+        Cancel();
+    
+        if (!isBlocked ||
+            columns <= 0 ||
+            rows <= 0 ||
+            tileSize <= 0.0f ||
+            maxSnapDistance < 0.0f ||
+            !std::isfinite(requestedDestination.x) ||
+            !std::isfinite(requestedDestination.y))
+        {
+            return false;
+        }
+    
+        const float worldWidth = columns * tileSize;
+        const float worldHeight = rows * tileSize;
+    
+        // Reject clicks outside the map.
+        if (requestedDestination.x < 0.0f ||
+            requestedDestination.y < 0.0f ||
+            requestedDestination.x >= worldWidth ||
+            requestedDestination.y >= worldHeight)
+        {
+            return false;
+        }
+    
+        // Reject clicks directly inside solid geometry.
+        // A free pixel near a wall is different from
+        // a click that actually lands inside the wall.
+        const SDL_FRect clickedPoint{
+            requestedDestination.x,
+            requestedDestination.y,
+            0.5f,
+            0.5f
+        };
+    
+        if (isBlocked(clickedPoint))
+        {
+            SDL_Log("Navigation: clicked solid geometry");
+            return false;
+        }
+    
+        // Always prefer the exact clicked destination.
+        if (TryNavigateTo(
+                requestedDestination,
+                actorHitbox,
+                columns,
+                rows,
+                tileSize,
+                isBlocked))
+        {
+            return true;
+        }
+    
+        // ----------------------------------
+        // Search nearby destinations
+        // ----------------------------------
+    
+        struct Candidate
+        {
+            SDL_FPoint position{};
+            float distanceSquared = 0.0f;
+        };
+    
+        std::vector<Candidate> candidates;
+    
+        constexpr float searchStep = 8.0f;
+    
+        const int steps =
+            static_cast<int>(
+                std::ceil(maxSnapDistance / searchStep)
+            );
+        
+        const float maxDistanceSquared =
+            maxSnapDistance * maxSnapDistance;
+        
+        for (int y = -steps; y <= steps; ++y)
+        {
+            for (int x = -steps; x <= steps; ++x)
+            {
+                const float dx = x * searchStep;
+                const float dy = y * searchStep;
+            
+                const float distanceSquared =
+                    dx * dx + dy * dy;
+            
+                if (distanceSquared == 0.0f ||
+                    distanceSquared > maxDistanceSquared)
+                {
+                    continue;
+                }
+            
+                candidates.push_back({
+                    {
+                        requestedDestination.x + dx,
+                        requestedDestination.y + dy
+                    },
+                    distanceSquared
+                });
+            }
+        }
+    
+        // Try the closest alternatives first.
+        std::sort(
+            candidates.begin(),
+            candidates.end(),
+            [](const Candidate& a, const Candidate& b)
+            {
+                return a.distanceSquared <
+                       b.distanceSquared;
+            }
+        );
+    
+        for (const Candidate& candidate : candidates)
+        {
+            if (TryNavigateTo(
+                    candidate.position,
+                    actorHitbox,
+                    columns,
+                    rows,
+                    tileSize,
+                    isBlocked))
+            {
+                SDL_Log(
+                    "Navigation: snapped destination "
+                    "from (%.1f, %.1f) to (%.1f, %.1f)",
+                    requestedDestination.x,
+                    requestedDestination.y,
+                    candidate.position.x,
+                    candidate.position.y
+                );
+            
+                return true;
+            }
+        }
+    
+        SDL_Log(
+            "Navigation: no reachable position "
+            "within %.0f pixels of click",
+            maxSnapDistance
+        );
+    
         return false;
     }
 

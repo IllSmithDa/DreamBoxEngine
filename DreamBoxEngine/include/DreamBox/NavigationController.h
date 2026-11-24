@@ -58,6 +58,18 @@ namespace DreamBox
             const IsBlocked& isBlocked
         );
 
+
+        bool TryNavigateNear(
+            SDL_FPoint requestedDestination,
+            const SDL_FRect& actorHitbox,
+            int columns,
+            int rows,
+            float tileSize,
+            const IsBlocked& isBlocked,
+            float maxSnapDistance = 32.0f
+        );
+
+
     private:
         std::optional<SDL_FPoint> m_destination;
 
