@@ -1,14 +1,15 @@
 
 #pragma once
-
-#include "DreamBox/Interactable.h"
 #include <cstddef>
 #include <optional>
 #include <memory>
 #include <vector>
+#include "DreamBox/Interactable.h"
+
 
 namespace DreamBox
 {
+    class Inventory;
     class InteractionSystem
     {
     public:
@@ -47,6 +48,8 @@ namespace DreamBox
         bool TryInteractSelected(
             const SDL_FRect& playerHitbox
         );
+
+        int CollectChestLoot(Inventory& inventory);
         
     private:
         std::vector<std::unique_ptr<Interactable>>

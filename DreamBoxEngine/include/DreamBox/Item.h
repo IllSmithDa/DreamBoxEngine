@@ -17,4 +17,23 @@ namespace DreamBox
         ItemId id = ItemId::GoldCoin;
         int quantity = 0;
     };
+
+    inline constexpr const char* GetItemName(ItemId id)
+    {
+        switch (id)
+        {
+        case ItemId::GoldCoin:
+            return "Gold Coins";
+        
+        case ItemId::HealthPotion:
+            return "Health Potions";
+        
+        case ItemId::BronzeKey:
+            return "Bronze Keys";
+        
+        default:
+            return "Unknown Item";
+        }
+    }
+
 }

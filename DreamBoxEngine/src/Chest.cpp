@@ -80,4 +80,28 @@ namespace DreamBox
             SDL_RenderRect(renderer, &m_bounds);
         }
     }
+
+    std::optional<ItemStack>
+    Chest::GetUnclaimedLoot() const
+    {
+        // In our existing Chest implementation,
+        // CanInteract() becomes false after opening.
+        if (CanInteract() || m_lootClaimed)
+        {
+            return std::nullopt;
+        }
+
+        if (m_loot.quantity <= 0)
+        {
+            return std::nullopt;
+        }
+
+        return m_loot;
+    }
+
+    void Chest::MarkLootClaimed()
+    {
+        m_lootClaimed = true;
+    }
+
 }

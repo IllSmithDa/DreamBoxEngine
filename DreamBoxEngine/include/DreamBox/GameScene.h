@@ -13,7 +13,7 @@
 #include "DreamBox/Tilemap.h"
 #include "DreamBox/InteractionSystem.h"
 #include "DreamBox/NavigationController.h"
-
+ #include "DreamBox/Inventory.h"
 
 namespace DreamBox
 {
@@ -94,5 +94,7 @@ namespace DreamBox
 
         // navigation
         NavigationController m_navigation;
+
+        Inventory m_inventory;
     };
 }

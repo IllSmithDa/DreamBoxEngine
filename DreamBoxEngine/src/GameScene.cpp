@@ -303,6 +303,13 @@ namespace DreamBox
         }
 
 
+        // ----------------------------------
+        // Collect rewards from opened chests
+        // ----------------------------------
+            
+        m_interactions.CollectChestLoot(m_inventory);
+
+
         return SceneRequest::None;
 
 
@@ -529,15 +536,15 @@ namespace DreamBox
         }
 
         m_currentLevel = level;
-            
+
         CancelAutomaticAction();
         m_hoverPoint.reset();
-            
+
         SDL_Log(
             "Successfully loaded level %d",
             m_currentLevel
         );
-        
+
         return true;
     }
 

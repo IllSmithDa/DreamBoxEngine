@@ -1,13 +1,11 @@
-
+#include <memory>
+#include <SDL3/SDL_log.h>
 #include "DreamBox/InteractionSystem.h"
-
 #include "DreamBox/Chest.h"
 #include "DreamBox/Door.h"
 #include "DreamBox/Collision.h"
-
-#include <SDL3/SDL_log.h>
-
-#include <memory>
+#include "DreamBox/Inventory.h"
+#include "DreamBox/Chest.h"
 
 namespace DreamBox
 {
@@ -312,5 +310,66 @@ namespace DreamBox
         return true;
     }
 
+
+    int InteractionSystem::CollectChestLoot(
+        Inventory& inventory
+    )
+    {
+        int collectedRewards = 0;
+    
+        for (const auto& object : m_objects)
+        {
+            // Only chests provide loot in this phase.
+            Chest* chest =
+                dynamic_cast<Chest*>(object.get());
+        
+            if (!chest)
+            {
+                continue;
+            }
+        
+            const auto loot =
+                chest->GetUnclaimedLoot();
+        
+            if (!loot.has_value())
+            {
+                continue;
+            }
+        
+            // Inventory::Add() already checks capacity
+            // and guarantees all-or-nothing insertion.
+            const bool added = inventory.Add(
+                loot->id,
+                loot->quantity
+            );
+        
+            if (!added)
+            {
+                // Do not mark the reward collected.
+                // It remains inside the opened chest
+                // until inventory space is available.
+                continue;
+            }
+        
+            // Mark collected only after insertion succeeds.
+            chest->MarkLootClaimed();
+        
+            ++collectedRewards;
+        
+            SDL_Log(
+                "Collected: %d %s",
+                loot->quantity,
+                GetItemName(loot->id)
+            );
+        
+            SDL_Log(
+                "Inventory total: %d %s",
+                inventory.Count(loot->id),
+                GetItemName(loot->id)
+            );
+        }
+    
+        return collectedRewards;
+    }
 
 }

@@ -374,3 +374,38 @@ add_test(
     NAME InventoryTests
     COMMAND InventoryTests
 )
+
+
+# ==================================
+# Chest Loot Tests
+# ==================================
+
+add_executable(
+    ChestLootTests
+
+    ../tests/ChestLootTests.cpp
+
+    src/InteractionSystem.cpp
+    src/Chest.cpp
+    src/Door.cpp
+    src/Inventory.cpp
+    src/Collision.cpp
+    src/GameObject.cpp
+)
+
+target_include_directories(
+    ChestLootTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(
+    ChestLootTests
+    PRIVATE
+    SDL3::SDL3
+)
+
+add_test(
+    NAME ChestLootTests
+    COMMAND ChestLootTests
+)
