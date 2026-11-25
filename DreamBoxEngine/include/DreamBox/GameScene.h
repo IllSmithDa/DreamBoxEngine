@@ -16,7 +16,7 @@
 #include "DreamBox/Inventory.h"
 #include "DreamBox/InventoryPanel.h"
 #include "DreamBox/PauseMenu.h"
-
+#include "DreamBox/PickupSystem.h"
 
 namespace DreamBox
 {
@@ -113,6 +113,8 @@ namespace DreamBox
 
         // pause menu
         std::unique_ptr<PauseMenu> m_pauseMenu;
-        
+
+        PickupSystem m_pickups;
+
     };
 }

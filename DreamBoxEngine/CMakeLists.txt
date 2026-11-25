@@ -102,6 +102,7 @@ add_executable(
     src/Inventory.cpp
     src/InventoryPanel.cpp
     src/PauseMenu.cpp
+    src/PickupSystem.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -129,6 +130,8 @@ add_executable(
     include/DreamBox/PauseMenu.h
     include/DreamBox/PauseMenuModel.h
     include/DreamBox/WorldProgress.h
+    include/DreamBox/GroundPickup.h
+    include/DreamBox/PickupSystem.h
 )   
 
 target_include_directories(
@@ -456,4 +459,34 @@ target_include_directories(
 add_test(
     NAME WorldProgressTests
     COMMAND WorldProgressTests
+)
+
+
+# ==================================
+# Ground Pickup Tests
+# ==================================
+
+add_executable(
+    PickupTests
+
+    ../tests/PickupTests.cpp
+    src/PickupSystem.cpp
+    src/Inventory.cpp
+)
+
+target_include_directories(
+    PickupTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(
+    PickupTests
+    PRIVATE
+    SDL3::SDL3
+)
+
+add_test(
+    NAME PickupTests
+    COMMAND PickupTests
 )

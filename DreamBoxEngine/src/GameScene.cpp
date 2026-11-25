@@ -1,5 +1,6 @@
 #include "DreamBox/GameScene.h"
 #include "DreamBox/Collision.h"
+#include <array>
 #include <SDL3/SDL_filesystem.h>
 #include <string>
 #include <cmath>
@@ -399,6 +400,32 @@ namespace DreamBox
         m_interactions.CollectChestLoot(m_inventory);
 
 
+        // ----------------------------------
+        // Collect nearby ground pickups
+        // ----------------------------------
+
+        const auto collectedPickups =
+            m_pickups.CollectNearby(
+                m_player.GetCollisionBounds(),
+                m_inventory
+            );
+        
+        for (const ItemStack& loot : collectedPickups)
+        {
+            SDL_Log(
+                "Ground pickup collected: %d %s",
+                loot.quantity,
+                GetItemName(loot.id)
+            );
+        
+            SDL_Log(
+                "Inventory total: %d %s",
+                m_inventory.Count(loot.id),
+                GetItemName(loot.id)
+            );
+        }
+
+
         return SceneRequest::None;
 
 
@@ -414,6 +441,42 @@ namespace DreamBox
         
         // tile map rendering
         m_tilemap.Render(renderer);
+
+
+        // ----------------------------------
+        // Render ground pickups
+        // Temporary gold-colored placeholders
+        // ----------------------------------
+            
+        for (const GroundPickup& pickup :
+             m_pickups.GetPickups())
+        {
+            if (pickup.collected)
+            {
+                continue;
+            }
+        
+            SDL_SetRenderDrawColor(
+                renderer,
+                235, 180, 45, 255
+            );
+        
+            SDL_RenderFillRect(
+                renderer,
+                &pickup.bounds
+            );
+        
+            SDL_SetRenderDrawColor(
+                renderer,
+                255, 230, 120, 255
+            );
+        
+            SDL_RenderRect(
+                renderer,
+                &pickup.bounds
+            );
+        }
+
 
         m_interactions.Render(
             renderer,
@@ -650,6 +713,97 @@ namespace DreamBox
             );
         }
 
+        // ----------------------------------
+        // Temporary ground pickup spawning
+        // ----------------------------------
+
+        // Reset pickups when a new level loads.
+        m_pickups.SetPickups({});
+
+        // For this phase, spawn five coins on a nearby
+        // walkable tile in Level 1.
+        if (level == 1)
+        {
+            const SDL_FRect playerHitbox =
+                m_player.GetCollisionBounds();
+        
+            const SDL_FPoint playerCenter{
+                playerHitbox.x + playerHitbox.w / 2.0f,
+                playerHitbox.y + playerHitbox.h / 2.0f
+            };
+        
+            const std::array<SDL_FPoint, 8> offsets{{
+                { 80.0f,   0.0f},
+                {  0.0f, -80.0f},
+                {-80.0f,   0.0f},
+                {  0.0f,  80.0f},
+                {120.0f,   0.0f},
+                {  0.0f,-120.0f},
+                {-120.0f,  0.0f},
+                {  0.0f, 120.0f}
+            }};
+        
+            for (const SDL_FPoint& offset : offsets)
+            {
+                const SDL_FPoint center{
+                    playerCenter.x + offset.x,
+                    playerCenter.y + offset.y
+                };
+            
+                // Make sure the player's entire hitbox
+                // can stand at this pickup's location.
+                const SDL_FRect standingHitbox{
+                    center.x - playerHitbox.w / 2.0f,
+                    center.y - playerHitbox.h / 2.0f,
+                    playerHitbox.w,
+                    playerHitbox.h
+                };
+            
+                const float worldWidth =
+                    Tilemap::Columns * Tilemap::TileSize;
+            
+                const float worldHeight =
+                    Tilemap::Rows * Tilemap::TileSize;
+            
+                const bool insideWorld =
+                    standingHitbox.x >= 0.0f &&
+                    standingHitbox.y >= 0.0f &&
+                    standingHitbox.x + standingHitbox.w
+                        <= worldWidth &&
+                    standingHitbox.y + standingHitbox.h
+                        <= worldHeight;
+            
+                if (!insideWorld ||
+                    m_tilemap.CollidesWithWall(standingHitbox) ||
+                    m_interactions.CollidesWithSolid(standingHitbox))
+                {
+                    continue;
+                }
+            
+                const GroundPickup gold{
+                    {ItemId::GoldCoin, 5},
+                    {
+                        center.x - 10.0f,
+                        center.y - 10.0f,
+                        20.0f,
+                        20.0f
+                    },
+                    false
+                };
+            
+                m_pickups.SetPickups({gold});
+            
+                SDL_Log(
+                    "Ground pickup spawned at %.1f, %.1f",
+                    center.x,
+                    center.y
+                );
+            
+                break;
+            }
+        }
+
+
         m_currentLevel = level;
 
         CancelAutomaticAction();
@@ -731,6 +885,30 @@ namespace DreamBox
 
         const SDL_FRect playerHitbox =
             m_player.GetCollisionBounds();
+
+        // ----------------------------------
+        // Check whether the player clicked a pickup
+        // ----------------------------------
+
+        const auto pickupDestination =
+            m_pickups.GetClickedDestination(point);
+
+        if (pickupDestination.has_value())
+        {
+            // Ground pickups use ordinary navigation,
+            // rather than chest/door interactions.
+            m_interactions.ClearSelection();
+        
+            if (!TrySetMovePath(pickupDestination.value()))
+            {
+                SDL_Log(
+                    "Ground pickup is not reachable"
+                );
+            }
+        
+            return;
+        }
+
 
         // ----------------------------------
         // 1. Check for a level exit
