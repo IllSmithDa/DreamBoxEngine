@@ -553,10 +553,25 @@ namespace DreamBox
         // Render gameplay overlays last
         // ----------------------------------
 
-        if (m_overlayMode == OverlayMode::Inventory &&
-            m_inventoryPanel)
+        switch (m_overlayMode)
         {
-            m_inventoryPanel->Render(renderer);
+        case OverlayMode::Inventory:
+            if (m_inventoryPanel)
+            {
+                m_inventoryPanel->Render(renderer);
+            }
+            break;
+
+        case OverlayMode::Pause:
+            if (m_pauseMenu)
+            {
+                m_pauseMenu->Render(renderer);
+            }
+            break;
+
+        case OverlayMode::None:
+        default:
+            break;
         }
 
 
