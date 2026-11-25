@@ -14,6 +14,7 @@
 #include "DreamBox/InteractionSystem.h"
 #include "DreamBox/NavigationController.h"
  #include "DreamBox/Inventory.h"
+ #include "DreamBox/InventoryPanel.h"
 
 namespace DreamBox
 {

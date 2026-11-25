@@ -100,6 +100,7 @@ add_executable(
     src/Pathfinder.cpp
     src/NavigationController.cpp
     src/Inventory.cpp
+    src/InventoryPanel.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -123,6 +124,7 @@ add_executable(
     include/DreamBox/NavigationController.h
     include/DreamBox/Inventory.h
     include/DreamBox/Item.h
+    include/DreamBox/InventoryPanel.h
 )   
 
 target_include_directories(

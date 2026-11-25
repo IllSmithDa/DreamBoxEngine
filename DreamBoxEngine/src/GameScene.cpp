@@ -39,6 +39,20 @@ namespace DreamBox
             return;
         }
 
+        // ----------------------------------
+        // Initialize inventory UI
+        // ----------------------------------
+
+        const std::string inventoryFontPath =
+            std::string(basePath) +
+            "assets/fonts/Montserrat/Montserrat-Regular.ttf";
+
+        m_inventoryPanel = std::make_unique<InventoryPanel>(
+            renderer,
+            inventoryFontPath
+        );
+
+
         std::string texturePath =
             std::string(basePath) +
             "assets/sprites/characters/player_sprites.png";
@@ -75,14 +89,57 @@ namespace DreamBox
         float deltaTime
     )
     {
+
         // ----------------------------------
-        // 1. Scene input
+        // Inventory overlay controls
         // ----------------------------------
 
+        // Toggle inventory with I.
+        if (input.IsKeyPressed(SDL_SCANCODE_I))
+        {
+            if (m_overlayMode == OverlayMode::Inventory)
+            {
+                m_overlayMode = OverlayMode::None;
+            }
+            else
+            {
+                m_overlayMode = OverlayMode::Inventory;
+            
+                // Read the latest inventory contents.
+                if (m_inventoryPanel)
+                {
+                    m_inventoryPanel->Refresh(m_inventory);
+                }
+            }
+        
+            return SceneRequest::None;
+        }
+
+        // While inventory is open, freeze gameplay.
+        if (m_overlayMode == OverlayMode::Inventory)
+        {
+            // Escape closes the inventory instead
+            // of returning directly to main menu.
+            if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
+            {
+                m_overlayMode = OverlayMode::None;
+            }
+        
+            // Release the interaction input latch.
+            m_interactions.Update(
+                false,
+                m_player.GetCollisionBounds()
+            );
+        
+            return SceneRequest::None;
+        }
+
+        // Existing behavior when no overlay is open.
         if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
         {
             return SceneRequest::MainMenu;
         }
+
 
         // ----------------------------------
         // Mouse hover position
@@ -306,7 +363,7 @@ namespace DreamBox
         // ----------------------------------
         // Collect rewards from opened chests
         // ----------------------------------
-            
+
         m_interactions.CollectChestLoot(m_inventory);
 
 
@@ -454,6 +511,17 @@ namespace DreamBox
                 moveTarget->y + markerSize
             );
         }
+
+        // ----------------------------------
+        // Render gameplay overlays last
+        // ----------------------------------
+
+        if (m_overlayMode == OverlayMode::Inventory &&
+            m_inventoryPanel)
+        {
+            m_inventoryPanel->Render(renderer);
+        }
+
 
     }
     
