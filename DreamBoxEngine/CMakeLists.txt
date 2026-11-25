@@ -128,6 +128,7 @@ add_executable(
     include/DreamBox/InventoryPanel.h
     include/DreamBox/PauseMenu.h
     include/DreamBox/PauseMenuModel.h
+    include/DreamBox/WorldProgress.h
 )   
 
 target_include_directories(
@@ -433,4 +434,26 @@ target_include_directories(
 add_test(
     NAME PauseMenuTests
     COMMAND PauseMenuTests
+)
+
+
+
+# ==================================
+# World Progress Tests
+# ==================================
+
+add_executable(
+    WorldProgressTests
+    ../tests/WorldProgressTests.cpp
+)
+
+target_include_directories(
+    WorldProgressTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+add_test(
+    NAME WorldProgressTests
+    COMMAND WorldProgressTests
 )
