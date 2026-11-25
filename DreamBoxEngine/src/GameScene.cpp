@@ -135,49 +135,6 @@ namespace DreamBox
         
             return SceneRequest::None;
         }
-
-        // ----------------------------------
-        // 2. Inventory is open
-        // ----------------------------------
-
-        switch (m_overlayMode)
-        {
-        case OverlayMode::Inventory:
-            if (m_inventoryPanel)
-            {
-                m_inventoryPanel->Render(renderer);
-            }
-            break;
-        
-        case OverlayMode::Pause:
-            if (m_pauseMenu)
-            {
-                m_pauseMenu->Render(renderer);
-            }
-            break;
-        
-        case OverlayMode::None:
-        default:
-            break;
-        }
-
-        // ----------------------------------
-        // 4. Open inventory
-        // ----------------------------------
-
-        if (input.IsKeyPressed(SDL_SCANCODE_I))
-        {
-            m_overlayMode = OverlayMode::Inventory;
-        
-            if (m_inventoryPanel)
-            {
-                m_inventoryPanel->Refresh(m_inventory);
-            }
-        
-            return SceneRequest::None;
-        }
-
-
         // ----------------------------------
         // Mouse hover position
         // ----------------------------------
@@ -548,6 +505,11 @@ namespace DreamBox
                 moveTarget->y + markerSize
             );
         }
+
+        // ----------------------------------
+        // Render gameplay overlays last
+        // ----------------------------------
+
 
         // ----------------------------------
         // Render gameplay overlays last
