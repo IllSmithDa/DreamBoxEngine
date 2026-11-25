@@ -48,6 +48,9 @@ namespace DreamBox
         {
             return m_doorBounds;
         }
+
+        const std::vector<SDL_FRect>&
+        GetGoldPickupBounds() const;
     private:
         enum class Tile : std::uint8_t
         {
@@ -67,5 +70,6 @@ namespace DreamBox
         std::optional<SDL_FRect> m_exitBounds;
         std::vector<SDL_FRect> m_chestBounds;
         std::vector<SDL_FRect> m_doorBounds;
+        std::vector<SDL_FRect> m_goldPickupBounds;
     };
 }

@@ -447,35 +447,19 @@ namespace DreamBox
         // Render ground pickups
         // Temporary gold-colored placeholders
         // ----------------------------------
-            
-        for (const GroundPickup& pickup :
-             m_pickups.GetPickups())
+        std::vector<GroundPickup> levelPickups;
+
+        for (const SDL_FRect& bounds :
+             m_tilemap.GetGoldPickupBounds())
         {
-            if (pickup.collected)
-            {
-                continue;
-            }
-        
-            SDL_SetRenderDrawColor(
-                renderer,
-                235, 180, 45, 255
-            );
-        
-            SDL_RenderFillRect(
-                renderer,
-                &pickup.bounds
-            );
-        
-            SDL_SetRenderDrawColor(
-                renderer,
-                255, 230, 120, 255
-            );
-        
-            SDL_RenderRect(
-                renderer,
-                &pickup.bounds
-            );
+            levelPickups.push_back(GroundPickup{
+                {ItemId::GoldCoin, 5},
+                bounds,
+                false
+            });
         }
+
+m_pickups.SetPickups(std::move(levelPickups));
 
 
         m_interactions.Render(

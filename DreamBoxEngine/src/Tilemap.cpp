@@ -4,6 +4,7 @@
 #include "DreamBox/Tilemap.h"
 #include "DreamBox/Collision.h"
 #include <fstream>
+#include <utility>
 
 namespace DreamBox
 {
@@ -224,6 +225,8 @@ namespace DreamBox
         
             return false;
         }
+
+        
         // spawn in player
         std::optional<SDL_FPoint> newSpawn;
         // Temporary storage prevents a bad map
@@ -237,6 +240,9 @@ namespace DreamBox
         
         // door check
         std::vector<SDL_FRect> newDoorBounds;
+
+        // Gold pickup positions (kept temporary until map validation succeeds).
+        std::vector<SDL_FRect> newGoldPickupBounds;
 
         std::string line;
     
@@ -300,6 +306,25 @@ namespace DreamBox
                                 }
                             );
                         
+                            break;
+                        }
+                    case 'G':
+                        {
+                            // Gold is a walkable floor tile.
+                            tile = Tile::Floor;
+
+                            constexpr float pickupSize = 20.0f;
+                            const float tileSize =
+                                static_cast<float>(TileSize);
+                            const float offset =
+                                (tileSize - pickupSize) / 2.0f;
+
+                            newGoldPickupBounds.push_back(SDL_FRect{
+                                static_cast<float>(col) * tileSize + offset,
+                                static_cast<float>(row) * tileSize + offset,
+                                pickupSize,
+                                pickupSize
+                            });
                             break;
                         }
                     case 'D':
@@ -384,6 +409,7 @@ namespace DreamBox
         }
     
         // Only replace the current map after validation.
+        m_goldPickupBounds = std::move(newGoldPickupBounds);
         m_tiles = newTiles;
         m_playerSpawn = newSpawn;
         m_exitBounds = newExitBounds;
@@ -395,6 +421,12 @@ namespace DreamBox
         );
     
         return true;
+    }
+
+    const std::vector<SDL_FRect>&
+    Tilemap::GetGoldPickupBounds() const
+    {
+        return m_goldPickupBounds;
     }
 
 }
