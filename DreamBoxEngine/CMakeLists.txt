@@ -101,6 +101,7 @@ add_executable(
     src/NavigationController.cpp
     src/Inventory.cpp
     src/InventoryPanel.cpp
+    src/PauseMenu.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -125,6 +126,8 @@ add_executable(
     include/DreamBox/Inventory.h
     include/DreamBox/Item.h
     include/DreamBox/InventoryPanel.h
+    include/DreamBox/PauseMenu.h
+    include/DreamBox/PauseMenuModel.h
 )   
 
 target_include_directories(
@@ -408,4 +411,26 @@ target_link_libraries(
 add_test(
     NAME ChestLootTests
     COMMAND ChestLootTests
+)
+
+
+# ==================================
+# Pause Menu Tests
+# ==================================
+
+add_executable(
+    PauseMenuTests
+
+    ../tests/PauseMenuTests.cpp
+)
+
+target_include_directories(
+    PauseMenuTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+add_test(
+    NAME PauseMenuTests
+    COMMAND PauseMenuTests
 )

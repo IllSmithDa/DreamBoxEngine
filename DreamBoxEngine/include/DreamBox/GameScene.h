@@ -15,6 +15,8 @@
 #include "DreamBox/NavigationController.h"
 #include "DreamBox/Inventory.h"
 #include "DreamBox/InventoryPanel.h"
+#include "DreamBox/PauseMenu.h"
+
 
 namespace DreamBox
 {
@@ -101,11 +103,16 @@ namespace DreamBox
         enum class OverlayMode
         {
             None,
+            Pause,
             Inventory
         };
 
         OverlayMode m_overlayMode = OverlayMode::None;
 
         std::unique_ptr<InventoryPanel> m_inventoryPanel;
+
+        // pause menu
+        std::unique_ptr<PauseMenu> m_pauseMenu;
+        
     };
 }

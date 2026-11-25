@@ -52,6 +52,12 @@ namespace DreamBox
             inventoryFontPath
         );
 
+        
+        m_pauseMenu = std::make_unique<PauseMenu>(
+            renderer,
+            inventoryFontPath
+        );
+
 
         std::string texturePath =
             std::string(basePath) +
@@ -90,54 +96,85 @@ namespace DreamBox
     )
     {
 
+
+        // ==================================
+        // Overlay input handling
+        // ==================================
+
         // ----------------------------------
-        // Inventory overlay controls
+        // 1. Pause menu is open
         // ----------------------------------
 
-        // Toggle inventory with I.
-        if (input.IsKeyPressed(SDL_SCANCODE_I))
+        if (m_overlayMode == OverlayMode::Pause)
         {
-            if (m_overlayMode == OverlayMode::Inventory)
+            // Keep the keyboard interaction latch released.
+            m_interactions.Update(
+                false,
+                m_player.GetCollisionBounds()
+            );
+        
+            if (m_pauseMenu)
             {
-                m_overlayMode = OverlayMode::None;
-            }
-            else
-            {
-                m_overlayMode = OverlayMode::Inventory;
+                const PauseMenuAction action =
+                    m_pauseMenu->Update(input);
             
-                // Read the latest inventory contents.
-                if (m_inventoryPanel)
+                switch (action)
                 {
-                    m_inventoryPanel->Refresh(m_inventory);
+                case PauseMenuAction::Resume:
+                    m_overlayMode = OverlayMode::None;
+                    break;
+                
+                case PauseMenuAction::MainMenu:
+                    return SceneRequest::MainMenu;
+                
+                case PauseMenuAction::None:
+                default:
+                    break;
                 }
             }
         
             return SceneRequest::None;
         }
 
-        // While inventory is open, freeze gameplay.
-        if (m_overlayMode == OverlayMode::Inventory)
+        // ----------------------------------
+        // 2. Inventory is open
+        // ----------------------------------
+
+        switch (m_overlayMode)
         {
-            // Escape closes the inventory instead
-            // of returning directly to main menu.
-            if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
+        case OverlayMode::Inventory:
+            if (m_inventoryPanel)
             {
-                m_overlayMode = OverlayMode::None;
+                m_inventoryPanel->Render(renderer);
             }
+            break;
         
-            // Release the interaction input latch.
-            m_interactions.Update(
-                false,
-                m_player.GetCollisionBounds()
-            );
+        case OverlayMode::Pause:
+            if (m_pauseMenu)
+            {
+                m_pauseMenu->Render(renderer);
+            }
+            break;
         
-            return SceneRequest::None;
+        case OverlayMode::None:
+        default:
+            break;
         }
 
-        // Existing behavior when no overlay is open.
-        if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
+        // ----------------------------------
+        // 4. Open inventory
+        // ----------------------------------
+
+        if (input.IsKeyPressed(SDL_SCANCODE_I))
         {
-            return SceneRequest::MainMenu;
+            m_overlayMode = OverlayMode::Inventory;
+        
+            if (m_inventoryPanel)
+            {
+                m_inventoryPanel->Refresh(m_inventory);
+            }
+        
+            return SceneRequest::None;
         }
 
 
