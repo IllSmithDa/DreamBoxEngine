@@ -1,10 +1,11 @@
 #include "DreamBox/GameScene.h"
 #include "DreamBox/Collision.h"
-#include <array>
 #include <SDL3/SDL_filesystem.h>
 #include <string>
 #include <cmath>
 #include <algorithm>
+#include <vector>
+#include <utility>
 
 
 
@@ -444,23 +445,22 @@ namespace DreamBox
 
 
         // ----------------------------------
-        // Render ground pickups
+        // Render active ground pickups
         // Temporary gold-colored placeholders
         // ----------------------------------
-        std::vector<GroundPickup> levelPickups;
-
-        for (const SDL_FRect& bounds :
-             m_tilemap.GetGoldPickupBounds())
+        for (const GroundPickup& pickup : m_pickups.GetPickups())
         {
-            levelPickups.push_back(GroundPickup{
-                {ItemId::GoldCoin, 5},
-                bounds,
-                false
-            });
+            if (pickup.collected)
+            {
+                continue;
+            }
+
+            SDL_SetRenderDrawColor(renderer, 235, 180, 45, 255);
+            SDL_RenderFillRect(renderer, &pickup.bounds);
+
+            SDL_SetRenderDrawColor(renderer, 255, 230, 120, 255);
+            SDL_RenderRect(renderer, &pickup.bounds);
         }
-
-m_pickups.SetPickups(std::move(levelPickups));
-
 
         m_interactions.Render(
             renderer,
@@ -698,95 +698,26 @@ m_pickups.SetPickups(std::move(levelPickups));
         }
 
         // ----------------------------------
-        // Temporary ground pickup spawning
+        // Create ground pickups from map G markers
         // ----------------------------------
+        std::vector<GroundPickup> levelPickups;
 
-        // Reset pickups when a new level loads.
-        m_pickups.SetPickups({});
-
-        // For this phase, spawn five coins on a nearby
-        // walkable tile in Level 1.
-        if (level == 1)
+        for (const SDL_FRect& bounds : m_tilemap.GetGoldPickupBounds())
         {
-            const SDL_FRect playerHitbox =
-                m_player.GetCollisionBounds();
-        
-            const SDL_FPoint playerCenter{
-                playerHitbox.x + playerHitbox.w / 2.0f,
-                playerHitbox.y + playerHitbox.h / 2.0f
-            };
-        
-            const std::array<SDL_FPoint, 8> offsets{{
-                { 80.0f,   0.0f},
-                {  0.0f, -80.0f},
-                {-80.0f,   0.0f},
-                {  0.0f,  80.0f},
-                {120.0f,   0.0f},
-                {  0.0f,-120.0f},
-                {-120.0f,  0.0f},
-                {  0.0f, 120.0f}
-            }};
-        
-            for (const SDL_FPoint& offset : offsets)
-            {
-                const SDL_FPoint center{
-                    playerCenter.x + offset.x,
-                    playerCenter.y + offset.y
-                };
-            
-                // Make sure the player's entire hitbox
-                // can stand at this pickup's location.
-                const SDL_FRect standingHitbox{
-                    center.x - playerHitbox.w / 2.0f,
-                    center.y - playerHitbox.h / 2.0f,
-                    playerHitbox.w,
-                    playerHitbox.h
-                };
-            
-                const float worldWidth =
-                    Tilemap::Columns * Tilemap::TileSize;
-            
-                const float worldHeight =
-                    Tilemap::Rows * Tilemap::TileSize;
-            
-                const bool insideWorld =
-                    standingHitbox.x >= 0.0f &&
-                    standingHitbox.y >= 0.0f &&
-                    standingHitbox.x + standingHitbox.w
-                        <= worldWidth &&
-                    standingHitbox.y + standingHitbox.h
-                        <= worldHeight;
-            
-                if (!insideWorld ||
-                    m_tilemap.CollidesWithWall(standingHitbox) ||
-                    m_interactions.CollidesWithSolid(standingHitbox))
-                {
-                    continue;
-                }
-            
-                const GroundPickup gold{
-                    {ItemId::GoldCoin, 5},
-                    {
-                        center.x - 10.0f,
-                        center.y - 10.0f,
-                        20.0f,
-                        20.0f
-                    },
-                    false
-                };
-            
-                m_pickups.SetPickups({gold});
-            
-                SDL_Log(
-                    "Ground pickup spawned at %.1f, %.1f",
-                    center.x,
-                    center.y
-                );
-            
-                break;
-            }
+            levelPickups.push_back(GroundPickup{
+                {ItemId::GoldCoin, 5},
+                bounds,
+                false
+            });
         }
 
+        m_pickups.SetPickups(std::move(levelPickups));
+
+        SDL_Log(
+            "Level %d: %zu ground pickups loaded",
+            level,
+            m_pickups.GetPickups().size()
+        );
 
         m_currentLevel = level;
 
