@@ -96,45 +96,83 @@ namespace DreamBox
     )
     {
 
-
         // ==================================
         // Overlay input handling
         // ==================================
 
-        // ----------------------------------
-        // 1. Pause menu is open
-        // ----------------------------------
-
+        // 1. An open pause menu owns all input.
         if (m_overlayMode == OverlayMode::Pause)
         {
-            // Keep the keyboard interaction latch released.
             m_interactions.Update(
                 false,
                 m_player.GetCollisionBounds()
             );
-        
+
             if (m_pauseMenu)
             {
                 const PauseMenuAction action =
                     m_pauseMenu->Update(input);
-            
+
                 switch (action)
                 {
                 case PauseMenuAction::Resume:
                     m_overlayMode = OverlayMode::None;
                     break;
-                
+
                 case PauseMenuAction::MainMenu:
                     return SceneRequest::MainMenu;
-                
+
                 case PauseMenuAction::None:
                 default:
                     break;
                 }
             }
-        
+
             return SceneRequest::None;
         }
+
+        // 2. An open inventory owns all input.
+        if (m_overlayMode == OverlayMode::Inventory)
+        {
+            if (input.IsKeyPressed(SDL_SCANCODE_I) ||
+                input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
+            {
+                m_overlayMode = OverlayMode::None;
+            }
+
+            m_interactions.Update(
+                false,
+                m_player.GetCollisionBounds()
+            );
+
+            return SceneRequest::None;
+        }
+
+        // 3. Open the pause menu from normal gameplay.
+        if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
+        {
+            if (m_pauseMenu)
+            {
+                m_pauseMenu->Reset();
+                m_overlayMode = OverlayMode::Pause;
+            }
+
+            return SceneRequest::None;
+        }
+
+        // 4. Open the inventory from normal gameplay.
+        if (input.IsKeyPressed(SDL_SCANCODE_I))
+        {
+            m_overlayMode = OverlayMode::Inventory;
+
+            if (m_inventoryPanel)
+            {
+                m_inventoryPanel->Refresh(m_inventory);
+            }
+
+            return SceneRequest::None;
+        }
+
         // ----------------------------------
         // Mouse hover position
         // ----------------------------------
@@ -505,11 +543,6 @@ namespace DreamBox
                 moveTarget->y + markerSize
             );
         }
-
-        // ----------------------------------
-        // Render gameplay overlays last
-        // ----------------------------------
-
 
         // ----------------------------------
         // Render gameplay overlays last
