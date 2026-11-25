@@ -74,6 +74,13 @@ namespace DreamBox
         {
             SDL_Log("Failed to load player sprite sheet");
         }
+
+        // Gold visuals are managed by their own renderer.
+        m_goldRenderer = std::make_unique<GoldCoinRenderer>(
+            renderer,
+            std::string(basePath) +
+                "assets/sprites/items/gold_pile_sparkle.png"
+        );
     }
 
 
@@ -173,6 +180,13 @@ namespace DreamBox
             }
 
             return SceneRequest::None;
+        }
+
+        // Advance visual effects only during normal gameplay.
+        // Pause/inventory checks above return before this point.
+        if (m_goldRenderer)
+        {
+            m_goldRenderer->Update(deltaTime);
         }
 
         // ----------------------------------
@@ -444,22 +458,10 @@ namespace DreamBox
         m_tilemap.Render(renderer);
 
 
-        // ----------------------------------
-        // Render active ground pickups
-        // Temporary gold-colored placeholders
-        // ----------------------------------
-        for (const GroundPickup& pickup : m_pickups.GetPickups())
+        // Gold sprites, sparkle, and fallback rendering.
+        if (m_goldRenderer)
         {
-            if (pickup.collected)
-            {
-                continue;
-            }
-
-            SDL_SetRenderDrawColor(renderer, 235, 180, 45, 255);
-            SDL_RenderFillRect(renderer, &pickup.bounds);
-
-            SDL_SetRenderDrawColor(renderer, 255, 230, 120, 255);
-            SDL_RenderRect(renderer, &pickup.bounds);
+            m_goldRenderer->Render(renderer, m_pickups.GetPickups());
         }
 
         m_interactions.Render(

@@ -116,5 +116,9 @@ namespace DreamBox
 
         PickupSystem m_pickups;
 
+        std::unique_ptr<Texture> m_goldTexture;
+
+        float m_goldAnimationTime = 0.0f;
+
     };
 }
