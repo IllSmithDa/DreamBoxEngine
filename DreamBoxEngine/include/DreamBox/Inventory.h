@@ -33,15 +33,5 @@ namespace DreamBox
         std::size_t m_maxSlots;
         int m_maxStackSize;
 
-        enum class OverlayMode
-        {
-            None,
-            Inventory
-        };
-
-        OverlayMode m_overlayMode = OverlayMode::None;
-
-        std::unique_ptr<InventoryPanel> m_inventoryPanel;
-
     };
 }

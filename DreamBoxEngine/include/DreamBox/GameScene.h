@@ -13,8 +13,8 @@
 #include "DreamBox/Tilemap.h"
 #include "DreamBox/InteractionSystem.h"
 #include "DreamBox/NavigationController.h"
- #include "DreamBox/Inventory.h"
- #include "DreamBox/InventoryPanel.h"
+#include "DreamBox/Inventory.h"
+#include "DreamBox/InventoryPanel.h"
 
 namespace DreamBox
 {
@@ -97,5 +97,15 @@ namespace DreamBox
         NavigationController m_navigation;
 
         Inventory m_inventory;
+        
+        enum class OverlayMode
+        {
+            None,
+            Inventory
+        };
+
+        OverlayMode m_overlayMode = OverlayMode::None;
+
+        std::unique_ptr<InventoryPanel> m_inventoryPanel;
     };
 }
