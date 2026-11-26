@@ -103,6 +103,7 @@ add_executable(
     src/InventoryPanel.cpp
     src/PauseMenu.cpp
     src/PickupSystem.cpp
+    src/GoldCoinRenderer.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -132,6 +133,7 @@ add_executable(
     include/DreamBox/WorldProgress.h
     include/DreamBox/GroundPickup.h
     include/DreamBox/PickupSystem.h
+    include/DreamBox/GoldCoinRenderer.h
 )   
 
 target_include_directories(

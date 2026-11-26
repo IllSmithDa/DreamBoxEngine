@@ -17,6 +17,8 @@
 #include "DreamBox/InventoryPanel.h"
 #include "DreamBox/PauseMenu.h"
 #include "DreamBox/PickupSystem.h"
+#include "DreamBox/GoldCoinRenderer.h"
+
 
 namespace DreamBox
 {
@@ -120,5 +122,6 @@ namespace DreamBox
 
         float m_goldAnimationTime = 0.0f;
 
+        std::unique_ptr<GoldCoinRenderer> m_goldRenderer;
     };
 }
