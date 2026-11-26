@@ -2,12 +2,23 @@
 
 #include <vector>
 #include <memory>
+#include <optional>
+#include <vector>
+#include <cstddef>
 #include "DreamBox/Scene.h"
 #include "DreamBox/Player.h"
 #include "DreamBox/Wall.h"
 #include "DreamBox/Texture.h"
 #include "DreamBox/SpriteAnimator.h"
 #include "DreamBox/Tilemap.h"
+#include "DreamBox/InteractionSystem.h"
+#include "DreamBox/NavigationController.h"
+#include "DreamBox/Inventory.h"
+#include "DreamBox/InventoryPanel.h"
+#include "DreamBox/PauseMenu.h"
+#include "DreamBox/PickupSystem.h"
+#include "DreamBox/GoldCoinRenderer.h"
+
 
 namespace DreamBox
 {
@@ -57,8 +68,60 @@ namespace DreamBox
 
         // Prevent repeated transitions while standing on an exit.
         bool m_wasOnExit = false;
-            
+
         bool LoadLevel(int level);
+
+        InteractionSystem m_interactions;
+
+        std::optional<SDL_FPoint> m_hoverPoint;
+
+        bool TrySetMovePath(const SDL_FPoint& destination);
+
+        void CancelMovePath();
+
+        bool TryNavigateToSelectedObject();
+
+
+        enum class PendingAction
+        {
+            None,
+            ObjectInteraction,
+            LevelExit
+        };
+
+        PendingAction m_pendingAction = PendingAction::None;
+
+        void CancelAutomaticAction();
+
+        void HandlePointerNavigation(
+            const SDL_FPoint& point
+        );
+
+        // navigation
+        NavigationController m_navigation;
+
+        Inventory m_inventory;
         
+        enum class OverlayMode
+        {
+            None,
+            Pause,
+            Inventory
+        };
+
+        OverlayMode m_overlayMode = OverlayMode::None;
+
+        std::unique_ptr<InventoryPanel> m_inventoryPanel;
+
+        // pause menu
+        std::unique_ptr<PauseMenu> m_pauseMenu;
+
+        PickupSystem m_pickups;
+
+        std::unique_ptr<Texture> m_goldTexture;
+
+        float m_goldAnimationTime = 0.0f;
+
+        std::unique_ptr<GoldCoinRenderer> m_goldRenderer;
     };
 }

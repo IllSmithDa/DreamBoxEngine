@@ -94,6 +94,16 @@ add_executable(
     src/Texture.cpp
     src/SpriteAnimator.cpp
     src/Tilemap.cpp
+    src/InteractionSystem.cpp
+    src/Door.cpp
+    src/Chest.cpp
+    src/Pathfinder.cpp
+    src/NavigationController.cpp
+    src/Inventory.cpp
+    src/InventoryPanel.cpp
+    src/PauseMenu.cpp
+    src/PickupSystem.cpp
+    src/GoldCoinRenderer.cpp
 
     include/DreamBox/Engine.h
     include/DreamBox/Input.h
@@ -110,6 +120,20 @@ add_executable(
     include/DreamBox/Texture.h
     include/DreamBox/SpriteAnimator.h
     include/DreamBox/Tilemap.h
+    include/DreamBox/InteractionSystem.h
+    include/DreamBox/Chest.h
+    include/DreamBox/Door.h
+    include/DreamBox/Pathfinder.h
+    include/DreamBox/NavigationController.h
+    include/DreamBox/Inventory.h
+    include/DreamBox/Item.h
+    include/DreamBox/InventoryPanel.h
+    include/DreamBox/PauseMenu.h
+    include/DreamBox/PauseMenuModel.h
+    include/DreamBox/WorldProgress.h
+    include/DreamBox/GroundPickup.h
+    include/DreamBox/PickupSystem.h
+    include/DreamBox/GoldCoinRenderer.h
 )   
 
 target_include_directories(
@@ -250,4 +274,221 @@ target_link_libraries(
 add_test(
     NAME ButtonTests
     COMMAND ButtonTests
+)
+
+
+# ==================================
+# Interaction Tests
+# ==================================
+add_executable(
+    InteractionTests
+
+    ../tests/InteractionTests.cpp
+    src/InteractionSystem.cpp
+    src/Chest.cpp
+    src/Door.cpp
+    src/Collision.cpp
+    src/GameObject.cpp
+    src/Inventory.cpp
+)
+target_include_directories(
+    InteractionTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(
+    InteractionTests
+    PRIVATE
+    SDL3::SDL3
+)
+
+add_test(
+    NAME InteractionTests
+    COMMAND InteractionTests
+)
+
+
+
+# ==================================
+# Pathfinder Tests
+# ==================================
+
+add_executable(
+    PathfinderTests
+
+    ../tests/PathfinderTests.cpp
+    src/Pathfinder.cpp
+)
+
+target_include_directories(
+    PathfinderTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+add_test(
+    NAME PathfinderTests
+    COMMAND PathfinderTests
+)
+
+# ==================================
+# NavigationController Tests
+# ==================================
+
+add_executable(
+    NavigationControllerTests
+
+    ../tests/NavigationControllerTests.cpp
+    src/NavigationController.cpp
+    src/Pathfinder.cpp
+)
+
+target_include_directories(
+    NavigationControllerTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(
+    NavigationControllerTests
+    PRIVATE
+    SDL3::SDL3
+)
+
+add_test(
+    NAME NavigationControllerTests
+    COMMAND NavigationControllerTests
+)
+
+
+# ==================================
+# Inventory Tests
+# ==================================
+
+add_executable(
+    InventoryTests
+
+    ../tests/InventoryTests.cpp
+    src/Inventory.cpp
+)
+
+target_include_directories(
+    InventoryTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+add_test(
+    NAME InventoryTests
+    COMMAND InventoryTests
+)
+
+
+# ==================================
+# Chest Loot Tests
+# ==================================
+
+add_executable(
+    ChestLootTests
+
+    ../tests/ChestLootTests.cpp
+
+    src/InteractionSystem.cpp
+    src/Chest.cpp
+    src/Door.cpp
+    src/Inventory.cpp
+    src/Collision.cpp
+    src/GameObject.cpp
+)
+
+target_include_directories(
+    ChestLootTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(
+    ChestLootTests
+    PRIVATE
+    SDL3::SDL3
+)
+
+add_test(
+    NAME ChestLootTests
+    COMMAND ChestLootTests
+)
+
+
+# ==================================
+# Pause Menu Tests
+# ==================================
+
+add_executable(
+    PauseMenuTests
+
+    ../tests/PauseMenuTests.cpp
+)
+
+target_include_directories(
+    PauseMenuTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+add_test(
+    NAME PauseMenuTests
+    COMMAND PauseMenuTests
+)
+
+
+
+# ==================================
+# World Progress Tests
+# ==================================
+
+add_executable(
+    WorldProgressTests
+    ../tests/WorldProgressTests.cpp
+)
+
+target_include_directories(
+    WorldProgressTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+add_test(
+    NAME WorldProgressTests
+    COMMAND WorldProgressTests
+)
+
+
+# ==================================
+# Ground Pickup Tests
+# ==================================
+
+add_executable(
+    PickupTests
+
+    ../tests/PickupTests.cpp
+    src/PickupSystem.cpp
+    src/Inventory.cpp
+)
+
+target_include_directories(
+    PickupTests
+    PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+)
+
+target_link_libraries(
+    PickupTests
+    PRIVATE
+    SDL3::SDL3
+)
+
+add_test(
+    NAME PickupTests
+    COMMAND PickupTests
 )

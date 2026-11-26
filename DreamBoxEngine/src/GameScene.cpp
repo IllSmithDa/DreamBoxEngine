@@ -3,6 +3,10 @@
 #include <SDL3/SDL_filesystem.h>
 #include <string>
 #include <cmath>
+#include <algorithm>
+#include <vector>
+#include <utility>
+
 
 
 namespace DreamBox
@@ -24,6 +28,8 @@ namespace DreamBox
                 "Using the default tilemap."
             );
         }
+
+
         m_tilemap.LoadTileset(renderer);
         const char* basePath = SDL_GetBasePath( );
         if (!basePath)
@@ -34,72 +40,25 @@ namespace DreamBox
             );
             return;
         }
-        
 
-        // Load the external map layout.
-        const std::string mapPath =
+        // ----------------------------------
+        // Initialize inventory UI
+        // ----------------------------------
+
+        const std::string inventoryFontPath =
             std::string(basePath) +
-            "assets/maps/level_01.txt";
+            "assets/fonts/Montserrat/Montserrat-Regular.ttf";
 
+        m_inventoryPanel = std::make_unique<InventoryPanel>(
+            renderer,
+            inventoryFontPath
+        );
 
-        if (m_tilemap.LoadFromFile(mapPath))
-        {
-            const auto spawn = m_tilemap.GetPlayerSpawn();
         
-            if (spawn.has_value())
-            {
-                // Current collision rectangle.
-                const SDL_FRect hitbox =
-                    m_player.GetCollisionBounds();
-            
-                const float hitboxCenterX =
-                    hitbox.x + hitbox.w / 2.0f;
-            
-                const float hitboxCenterY =
-                    hitbox.y + hitbox.h / 2.0f;
-            
-                // Move the player's hitbox center
-                // to the center of the spawn tile.
-                const float moveX =
-                    spawn->x - hitboxCenterX;
-            
-                const float moveY =
-                    spawn->y - hitboxCenterY;
-            
-                m_player.Move(moveX, moveY);
-            
-                // Reject a spawn that intersects a wall.
-                if (m_tilemap.CollidesWithWall(
-                        m_player.GetCollisionBounds()))
-                {
-                    SDL_Log(
-                        "Player spawn intersects a wall. "
-                        "Using default position."
-                    );
-                
-                    m_player.Move(-moveX, -moveY);
-                }
-                else
-                {
-                    SDL_Log(
-                        "Player spawned at (%.1f, %.1f)",
-                        spawn->x,
-                        spawn->y
-                    );
-                }
-            }
-            else
-            {
-                SDL_Log(
-                    "Map has no player spawn. "
-                    "Using default position."
-                );
-            }
-        }
-        else
-        {
-            SDL_Log("Using default tilemap layout");
-        }
+        m_pauseMenu = std::make_unique<PauseMenu>(
+            renderer,
+            inventoryFontPath
+        );
 
 
         std::string texturePath =
@@ -115,71 +74,235 @@ namespace DreamBox
         {
             SDL_Log("Failed to load player sprite sheet");
         }
+
+        // Gold visuals are managed by their own renderer.
+        m_goldRenderer = std::make_unique<GoldCoinRenderer>(
+            renderer,
+            std::string(basePath) +
+                "assets/sprites/items/gold_pile_sparkle.png"
+        );
     }
 
+
+    void GameScene::CancelMovePath()
+    {
+        m_navigation.Cancel();
+    }
+
+
+    void GameScene::CancelAutomaticAction()
+    {
+        // Stop navigation.
+        CancelMovePath();
+
+        // Discard the requested action.
+        m_pendingAction = PendingAction::None;
+    }
 
     SceneRequest GameScene::Update(
         const Input& input,
         float deltaTime
     )
     {
+
+        // ==================================
+        // Overlay input handling
+        // ==================================
+
+        // 1. An open pause menu owns all input.
+        if (m_overlayMode == OverlayMode::Pause)
+        {
+            m_interactions.Update(
+                false,
+                m_player.GetCollisionBounds()
+            );
+
+            if (m_pauseMenu)
+            {
+                const PauseMenuAction action =
+                    m_pauseMenu->Update(input);
+
+                switch (action)
+                {
+                case PauseMenuAction::Resume:
+                    m_overlayMode = OverlayMode::None;
+                    break;
+
+                case PauseMenuAction::MainMenu:
+                    return SceneRequest::MainMenu;
+
+                case PauseMenuAction::None:
+                default:
+                    break;
+                }
+            }
+
+            return SceneRequest::None;
+        }
+
+        // 2. An open inventory owns all input.
+        if (m_overlayMode == OverlayMode::Inventory)
+        {
+            if (input.IsKeyPressed(SDL_SCANCODE_I) ||
+                input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
+            {
+                m_overlayMode = OverlayMode::None;
+            }
+
+            m_interactions.Update(
+                false,
+                m_player.GetCollisionBounds()
+            );
+
+            return SceneRequest::None;
+        }
+
+        // 3. Open the pause menu from normal gameplay.
         if (input.IsKeyPressed(SDL_SCANCODE_ESCAPE))
         {
-                m_showCollisionBounds = !m_showCollisionBounds;
+            if (m_pauseMenu)
+            {
+                m_pauseMenu->Reset();
+                m_overlayMode = OverlayMode::Pause;
+            }
 
-            return SceneRequest::MainMenu;
+            return SceneRequest::None;
         }
 
-        const SDL_FRect previousBounds = m_player.GetBounds();
+        // 4. Open the inventory from normal gameplay.
+        if (input.IsKeyPressed(SDL_SCANCODE_I))
+        {
+            m_overlayMode = OverlayMode::Inventory;
 
+            if (m_inventoryPanel)
+            {
+                m_inventoryPanel->Refresh(m_inventory);
+            }
+
+            return SceneRequest::None;
+        }
+
+        // Advance visual effects only during normal gameplay.
+        // Pause/inventory checks above return before this point.
+        if (m_goldRenderer)
+        {
+            m_goldRenderer->Update(deltaTime);
+        }
+
+        // ----------------------------------
+        // Mouse hover position
+        // ----------------------------------
+            
+        if (input.WasMouseMoved())
+        {
+            m_hoverPoint = SDL_FPoint{
+                input.GetMouseX(),
+                input.GetMouseY()
+            };
+        }
+
+        // ----------------------------------
+        // Pointer selection and navigation
+        // ----------------------------------
+        if (input.WasPointPressed())
+        {
+            HandlePointerNavigation(
+                input.GetPointPosition()
+            );
+        }
+
+
+
+        // ----------------------------------
+        // 3. Calculate player movement
+        // ----------------------------------
+
+        const SDL_FRect previousBounds =
+            m_player.GetBounds();
+
+        // Start with normal keyboard movement.
         SDL_FPoint movement =
-            m_player.GetMovement(
-                input,
+            m_player.GetMovement(input, deltaTime);
+
+        const bool keyboardMoving =
+            movement.x != 0.0f ||
+            movement.y != 0.0f;
+
+        
+        if (keyboardMoving)
+        {
+            // Manual controls override automatic actions.
+            CancelAutomaticAction();
+        
+            m_interactions.ClearSelection();
+        }
+        else if (m_navigation.HasPath())
+        {
+            movement = m_navigation.CalculateMovement(
+                m_player.GetCollisionBounds(),
                 deltaTime
             );
+        }
+
+
+        // ----------------------------------
+        // 4. Player movement and collision
+        // ----------------------------------
+
+        // Horizontal movement.
+        m_player.Move(movement.x, 0.0f);
+
+        if (PlayerCollidesWithWall())
+        {
+            m_player.Move(-movement.x, 0.0f);
+        }
+
+        // Vertical movement.
+        m_player.Move(0.0f, movement.y);
+
+        if (PlayerCollidesWithWall())
+        {
+            m_player.Move(0.0f, -movement.y);
+        }
+
+        const SDL_FRect currentBounds =
+            m_player.GetBounds();
+
+        const float movementX =
+            currentBounds.x - previousBounds.x;
+
+        const float movementY =
+            currentBounds.y - previousBounds.y;
         
-        m_player.Move(
-            movement.x,
-            0.0f
+        // ----------------------------------
+        // 5. Check pathfinding progress
+        // ----------------------------------
+
+        m_navigation.UpdateAfterMovement(
+            movement,
+            SDL_FPoint{movementX, movementY},
+            m_player.GetCollisionBounds()
         );
-    
-        if (PlayerCollidesWithWall())
-        {
-            m_player.Move(
-                -movement.x,
-                0.0f
-            );
-        }
-    
-        m_player.Move(
-            0.0f,
-            movement.y
-        );
-    
-        if (PlayerCollidesWithWall())
-        {
-            m_player.Move(
-                0.0f,
-                -movement.y
-            );
-        }
 
-        const SDL_FRect currentBounds = m_player.GetBounds();
 
-        const float movementX = currentBounds.x - previousBounds.x;
-
-        const float movementY = currentBounds.y - previousBounds.y;
+        // ----------------------------------
+        // 6. Player animation
+        // ----------------------------------
 
         m_playerAnimator.Update(
             movementX,
             movementY,
             deltaTime
         );
-        
 
-        // Check whether the player has entered an exit tile.
-        const auto exitBounds = m_tilemap.GetExitBounds();
-            
+
+        // ----------------------------------
+        // Level exit detection
+        // ----------------------------------
+
+        const auto exitBounds =
+            m_tilemap.GetExitBounds();
+
         bool onExit = false;
 
         if (exitBounds.has_value())
@@ -190,23 +313,140 @@ namespace DreamBox
             );
         }
 
-        if (onExit && !m_wasOnExit)
+        // ----------------------------------
+        // Activate explicitly requested exits
+        // ----------------------------------
+
+        const bool keyboardExitRequested =
+            onExit &&
+            input.IsKeyPressed(SDL_SCANCODE_E);
+
+        const bool pendingExitRequested =
+            m_pendingAction == PendingAction::LevelExit;
+
+        if (onExit &&
+            (pendingExitRequested || keyboardExitRequested))
         {
-            m_wasOnExit = true;
-        
-            // Two-level prototype: toggle between maps.
             const int nextLevel =
                 (m_currentLevel == 1) ? 2 : 1;
         
-            LoadLevel(nextLevel);
-        }
-        else if (!onExit)
-        {
-            m_wasOnExit = false;
+            if (LoadLevel(nextLevel))
+            {
+                SDL_Log("Interactive exit activated");
+                return SceneRequest::None;
+            }
+        
+            // Transition failed.
+            CancelAutomaticAction();
         }
 
+        // The route ended before reaching the exit.
+        if (m_pendingAction == PendingAction::LevelExit &&
+            !m_navigation.HasPath())
+        {
+            SDL_Log("Pending exit navigation cancelled");
+        
+            CancelAutomaticAction();
+        }
+
+        // ----------------------------------
+        // Keyboard interactions
+        // ----------------------------------
+
+        const bool interactPressed =
+            input.IsKeyPressed(SDL_SCANCODE_E);
+
+        if (interactPressed &&
+            m_pendingAction != PendingAction::None)
+        {
+            // Manual E takes priority over queued actions.
+            if (m_pendingAction ==
+                PendingAction::ObjectInteraction)
+            {
+                m_interactions.ClearSelection();
+            }
+        
+            CancelAutomaticAction();
+        }
+
+        // Continue forwarding the keyboard state
+        // every frame for correct edge detection.
+        m_interactions.Update(
+            interactPressed,
+            m_player.GetCollisionBounds()
+        );
+
+        // ----------------------------------
+        // Automatic object interaction
+        // ----------------------------------
+
+        if (m_pendingAction ==
+            PendingAction::ObjectInteraction)
+        {
+            if (!m_interactions
+                    .GetSelectedBounds()
+                    .has_value())
+            {
+                CancelAutomaticAction();
+            }
+            else if (m_interactions.TryInteractSelected(
+                         m_player.GetCollisionBounds()))
+            {
+                SDL_Log("Automatic interaction completed");
+            
+                CancelAutomaticAction();
+            }
+            else if (!m_navigation.HasPath())
+            {
+                SDL_Log(
+                    "Automatic interaction cancelled: "
+                    "destination not reached"
+                );
+            
+                CancelAutomaticAction();
+            }
+        }
+
+
+        // ----------------------------------
+        // Collect rewards from opened chests
+        // ----------------------------------
+
+        m_interactions.CollectChestLoot(m_inventory);
+
+
+        // ----------------------------------
+        // Collect nearby ground pickups
+        // ----------------------------------
+
+        const auto collectedPickups =
+            m_pickups.CollectNearby(
+                m_player.GetCollisionBounds(),
+                m_inventory
+            );
+        
+        for (const ItemStack& loot : collectedPickups)
+        {
+            SDL_Log(
+                "Ground pickup collected: %d %s",
+                loot.quantity,
+                GetItemName(loot.id)
+            );
+        
+            SDL_Log(
+                "Inventory total: %d %s",
+                m_inventory.Count(loot.id),
+                GetItemName(loot.id)
+            );
+        }
+
+
         return SceneRequest::None;
+
+
     }
+
+
 
 
     void GameScene::Render(
@@ -216,6 +456,59 @@ namespace DreamBox
         
         // tile map rendering
         m_tilemap.Render(renderer);
+
+
+        // Gold sprites, sparkle, and fallback rendering.
+        if (m_goldRenderer)
+        {
+            m_goldRenderer->Render(renderer, m_pickups.GetPickups());
+        }
+
+        m_interactions.Render(
+            renderer,
+            m_player.GetCollisionBounds(),
+            m_hoverPoint
+        );
+
+
+        // ----------------------------------
+        // Interactive exit highlighting
+        // ----------------------------------
+        
+        const auto exitBounds =
+            m_tilemap.GetExitBounds();
+        
+        if (exitBounds.has_value())
+        {
+            const bool hovered =
+                m_hoverPoint.has_value() &&
+                SDL_PointInRectFloat(
+                    &m_hoverPoint.value(),
+                    &exitBounds.value()
+                );
+            
+            if (hovered)
+            {
+                // Green highlight when hovered.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    50, 230, 150, 255
+                );
+            }
+            else
+            {
+                // Subtle blue outline to identify exits.
+                SDL_SetRenderDrawColor(
+                    renderer,
+                    110, 145, 220, 255
+                );
+            }
+        
+            SDL_RenderRect(
+                renderer,
+                &exitBounds.value()
+            );
+        }
 
         const SDL_FRect sourceFrame = m_playerAnimator.GetSourceRect();
 
@@ -264,14 +557,77 @@ namespace DreamBox
                 &collisionBounds
             );
         }
+        
+        // ----------------------------------
+        // Click-to-move target marker
+        // ----------------------------------
+
+        const auto& moveTarget =
+            m_navigation.GetDestination();
+
+        if (moveTarget.has_value())
+        {
+            SDL_SetRenderDrawColor(
+                renderer,
+                50, 230, 150, 255
+            );
+
+            constexpr float markerSize = 6.0f;
+
+            // Horizontal line.
+            SDL_RenderLine(
+                renderer,
+                moveTarget->x - markerSize,
+                moveTarget->y,
+                moveTarget->x + markerSize,
+                moveTarget->y
+            );
+
+            // Vertical line.
+            SDL_RenderLine(
+                renderer,
+                moveTarget->x,
+                moveTarget->y - markerSize,
+                moveTarget->x,
+                moveTarget->y + markerSize
+            );
+        }
+
+        // ----------------------------------
+        // Render gameplay overlays last
+        // ----------------------------------
+
+        switch (m_overlayMode)
+        {
+        case OverlayMode::Inventory:
+            if (m_inventoryPanel)
+            {
+                m_inventoryPanel->Render(renderer);
+            }
+            break;
+
+        case OverlayMode::Pause:
+            if (m_pauseMenu)
+            {
+                m_pauseMenu->Render(renderer);
+            }
+            break;
+
+        case OverlayMode::None:
+        default:
+            break;
+        }
+
 
     }
     
     bool GameScene::PlayerCollidesWithWall() const
     {
-        return m_tilemap.CollidesWithWall(
-            m_player.GetCollisionBounds()
-        );
+        const SDL_FRect hitbox =
+            m_player.GetCollisionBounds();
+
+        return m_tilemap.CollidesWithWall(hitbox) ||
+               m_interactions.CollidesWithSolid(hitbox);
     }
 
     bool GameScene::LoadLevel(int level)
@@ -302,6 +658,12 @@ namespace DreamBox
             );
             return false;
         }
+
+        // use interactions tilemaps door and door rendering
+        m_interactions.Initialize(
+            m_tilemap.GetChestBounds(),
+            m_tilemap.GetDoorBounds()
+        );
 
         // Move the player to the new level's spawn.
         const auto spawn = m_tilemap.GetPlayerSpawn();
@@ -337,7 +699,32 @@ namespace DreamBox
             );
         }
 
+        // ----------------------------------
+        // Create ground pickups from map G markers
+        // ----------------------------------
+        std::vector<GroundPickup> levelPickups;
+
+        for (const SDL_FRect& bounds : m_tilemap.GetGoldPickupBounds())
+        {
+            levelPickups.push_back(GroundPickup{
+                {ItemId::GoldCoin, 5},
+                bounds,
+                false
+            });
+        }
+
+        m_pickups.SetPickups(std::move(levelPickups));
+
+        SDL_Log(
+            "Level %d: %zu ground pickups loaded",
+            level,
+            m_pickups.GetPickups().size()
+        );
+
         m_currentLevel = level;
+
+        CancelAutomaticAction();
+        m_hoverPoint.reset();
 
         SDL_Log(
             "Successfully loaded level %d",
@@ -345,6 +732,193 @@ namespace DreamBox
         );
 
         return true;
+    }
+
+
+
+    bool GameScene::TrySetMovePath(
+        const SDL_FPoint& destination
+    )
+    {
+        return m_navigation.TryNavigateNear(
+            destination,
+            m_player.GetCollisionBounds(),
+        
+            Tilemap::Columns,
+            Tilemap::Rows,
+            static_cast<float>(Tilemap::TileSize),
+        
+            [this](const SDL_FRect& candidate)
+            {
+                return
+                    m_tilemap.CollidesWithWall(candidate) ||
+                    m_interactions.CollidesWithSolid(candidate);
+            },
+        
+            // Maximum distance from original click.
+            32.0f
+        );
+    }
+
+
+    bool GameScene::TryNavigateToSelectedObject()
+    {
+        const auto selectedBounds =
+            m_interactions.GetSelectedBounds();
+
+        if (!selectedBounds.has_value())
+        {
+            return false;
+        }
+
+        constexpr float interactionRange = 70.0f;
+
+        return m_navigation.TryNavigateWithinRange(
+            selectedBounds.value(),
+
+            m_player.GetCollisionBounds(),
+
+            interactionRange,
+
+            Tilemap::Columns,
+            Tilemap::Rows,
+            static_cast<float>(Tilemap::TileSize),
+
+            [this](const SDL_FRect& candidate)
+            {
+                return
+                    m_tilemap.CollidesWithWall(candidate) ||
+                    m_interactions.CollidesWithSolid(candidate);
+            }
+        );
+    }
+
+    void GameScene::HandlePointerNavigation(
+        const SDL_FPoint& point
+    )
+    {
+        // Every new click replaces the previous command.
+        CancelAutomaticAction();
+
+        const SDL_FRect playerHitbox =
+            m_player.GetCollisionBounds();
+
+        // ----------------------------------
+        // Check whether the player clicked a pickup
+        // ----------------------------------
+
+        const auto pickupDestination =
+            m_pickups.GetClickedDestination(point);
+
+        if (pickupDestination.has_value())
+        {
+            // Ground pickups use ordinary navigation,
+            // rather than chest/door interactions.
+            m_interactions.ClearSelection();
+        
+            if (!TrySetMovePath(pickupDestination.value()))
+            {
+                SDL_Log(
+                    "Ground pickup is not reachable"
+                );
+            }
+        
+            return;
+        }
+
+
+        // ----------------------------------
+        // 1. Check for a level exit
+        // ----------------------------------
+
+        const auto exitBounds =
+            m_tilemap.GetExitBounds();
+
+        if (exitBounds.has_value() &&
+            SDL_PointInRectFloat(
+                &point,
+                &exitBounds.value()))
+        {
+            m_interactions.ClearSelection();
+
+            // Already standing on the exit.
+            // The normal Update() transition check
+            // will activate it this frame.
+            if (Collision::Intersects(
+                    playerHitbox,
+                    exitBounds.value()))
+            {
+                m_pendingAction = PendingAction::LevelExit;
+                return;
+            }
+
+            // Navigate to the exit center.
+            const SDL_FPoint destination{
+                exitBounds->x + exitBounds->w / 2.0f,
+                exitBounds->y + exitBounds->h / 2.0f
+            };
+
+            if (TrySetMovePath(destination))
+            {
+                m_pendingAction = PendingAction::LevelExit;
+
+                SDL_Log(
+                    "Exit selected: navigating toward exit"
+                );
+            }
+            else
+            {
+                SDL_Log(
+                    "Exit selected but no route available"
+                );
+            }
+
+            return;
+        }
+
+        // ----------------------------------
+        // 2. Check for an interactable object
+        // ----------------------------------
+
+        const bool clickedObject =
+            m_interactions.HandlePointerPress(
+                point,
+                playerHitbox
+            );
+
+        if (clickedObject)
+        {
+            // Opened chests may consume a click
+            // without providing an active selection.
+            if (!m_interactions
+                    .GetSelectedBounds()
+                    .has_value())
+            {
+                return;
+            }
+
+            // First attempt an immediate interaction.
+            if (m_interactions.TryInteractSelected(
+                    playerHitbox))
+            {
+                return;
+            }
+
+            // Otherwise approach the selected object.
+            if (TryNavigateToSelectedObject())
+            {
+                m_pendingAction =
+                    PendingAction::ObjectInteraction;
+            }
+
+            return;
+        }
+
+        // ----------------------------------
+        // 3. Ordinary floor navigation
+        // ----------------------------------
+
+        TrySetMovePath(point);
     }
 
 

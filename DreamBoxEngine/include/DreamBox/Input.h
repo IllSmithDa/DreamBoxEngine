@@ -1,6 +1,7 @@
 #pragma once
 
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_rect.h>
 #include <array>
 
 namespace DreamBox
@@ -28,6 +29,18 @@ namespace DreamBox
         float GetClickX() const;
         float GetClickY() const;
 
+
+        bool WasPointPressed() const
+        {
+            return m_pointPressed;
+        }
+
+        SDL_FPoint GetPointPosition() const
+        {
+            return m_pointPosition;
+        }
+
+
     private:
         std::array<bool, SDL_SCANCODE_COUNT> m_currentKeys{};
         std::array<bool, SDL_SCANCODE_COUNT> m_previousKeys{};
@@ -44,5 +57,9 @@ namespace DreamBox
 
         bool m_mouseMoved = false;
         bool m_leftMousePressed = false;
+
+        bool m_pointPressed = false;
+        bool m_pendingPointPressed = false;
+        SDL_FPoint m_pointPosition{};
     };
 }

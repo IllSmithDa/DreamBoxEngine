@@ -4,6 +4,7 @@
 #include "DreamBox/Tilemap.h"
 #include "DreamBox/Collision.h"
 #include <fstream>
+#include <utility>
 
 namespace DreamBox
 {
@@ -224,6 +225,8 @@ namespace DreamBox
         
             return false;
         }
+
+        
         // spawn in player
         std::optional<SDL_FPoint> newSpawn;
         // Temporary storage prevents a bad map
@@ -232,6 +235,15 @@ namespace DreamBox
         // level exit point / level transition point
         std::optional<SDL_FRect> newExitBounds;
     
+        //check for chests
+        std::vector<SDL_FRect> newChestBounds;
+        
+        // door check
+        std::vector<SDL_FRect> newDoorBounds;
+
+        // Gold pickup positions (kept temporary until map validation succeeds).
+        std::vector<SDL_FRect> newGoldPickupBounds;
+
         std::string line;
     
         for (int row = 0; row < Rows; ++row)
@@ -279,7 +291,57 @@ namespace DreamBox
                     case '#':
                         tile = Tile::Wall;
                         break;
+                    case 'C':
+                        {
+                            // Chest locations behave like floor tiles.
+                            tile = Tile::Floor;
+                        
+                            // Record the chest's position.
+                            newChestBounds.push_back(
+                                SDL_FRect{
+                                    static_cast<float>(col) * TileSize,
+                                    static_cast<float>(row) * TileSize,
+                                    TileSize,
+                                    TileSize
+                                }
+                            );
+                        
+                            break;
+                        }
+                    case 'G':
+                        {
+                            // Gold is a walkable floor tile.
+                            tile = Tile::Floor;
 
+                            constexpr float pickupSize = 20.0f;
+                            const float tileSize =
+                                static_cast<float>(TileSize);
+                            const float offset =
+                                (tileSize - pickupSize) / 2.0f;
+
+                            newGoldPickupBounds.push_back(SDL_FRect{
+                                static_cast<float>(col) * tileSize + offset,
+                                static_cast<float>(row) * tileSize + offset,
+                                pickupSize,
+                                pickupSize
+                            });
+                            break;
+                        }
+                    case 'D':
+                        {
+                            tile = Tile::Floor;
+                        
+                            newDoorBounds.push_back(
+                                SDL_FRect{
+                                    static_cast<float>(col) * TileSize,
+                                    static_cast<float>(row) * TileSize,
+                                    TileSize,
+                                    TileSize
+                                }
+                            );
+                        
+                            break;
+                        }
                     case 'E':
                         if (newExitBounds.has_value())
                         {
@@ -347,16 +409,24 @@ namespace DreamBox
         }
     
         // Only replace the current map after validation.
+        m_goldPickupBounds = std::move(newGoldPickupBounds);
         m_tiles = newTiles;
         m_playerSpawn = newSpawn;
         m_exitBounds = newExitBounds;
-
+        m_chestBounds = std::move(newChestBounds);
+        m_doorBounds = std::move(newDoorBounds);
         SDL_Log(
             "Map loaded successfully: %s",
             filePath.c_str()
         );
     
         return true;
+    }
+
+    const std::vector<SDL_FRect>&
+    Tilemap::GetGoldPickupBounds() const
+    {
+        return m_goldPickupBounds;
     }
 
 }
