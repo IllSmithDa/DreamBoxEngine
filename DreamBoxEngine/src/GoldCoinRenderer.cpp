@@ -24,6 +24,14 @@ namespace DreamBox
             SDL_Log("GoldCoinRenderer: sprite sheet unavailable; using fallback rectangles");
             m_texture.reset();
         }
+        else
+        {
+            SDL_Log(
+                "GoldCoinRenderer: sprite sheet loaded: %s",
+                spriteSheetPath.c_str()
+            );
+        }
+
     }
 
     void GoldCoinRenderer::Update(float deltaTime)
@@ -107,6 +115,72 @@ namespace DreamBox
                 SDL_RenderFillRect(renderer, &pickup.bounds);
                 SDL_SetRenderDrawColor(renderer, 255, 230, 120, 255);
                 SDL_RenderRect(renderer, &pickup.bounds);
+
+
+                // ----------------------------------
+                // Additional visible sparkle effect
+                // ----------------------------------
+
+                const float phase = std::fmod(
+                    m_animationTime +
+                        static_cast<float>(i) * 0.43f,
+                    CycleSeconds
+                );
+
+                // Display a glint for 0.4 seconds
+                // during each animation cycle.
+                if (phase >= 1.95f && phase < 2.35f)
+                {
+                    const float centerX =
+                        pickup.bounds.x + pickup.bounds.w * 0.78f;
+                
+                    const float centerY =
+                        pickup.bounds.y + pickup.bounds.h * 0.25f;
+                
+                    const float radius =
+                        (phase < 2.1f) ? 4.0f : 7.0f;
+                
+                    // Bright central sparkle
+                    SDL_SetRenderDrawColor(
+                        renderer, 255, 255, 235, 255
+                    );
+                
+                    SDL_RenderLine(
+                        renderer,
+                        centerX - radius, centerY,
+                        centerX + radius, centerY
+                    );
+                
+                    SDL_RenderLine(
+                        renderer,
+                        centerX, centerY - radius,
+                        centerX, centerY + radius
+                    );
+                
+                    // Smaller golden diagonal rays
+                    SDL_SetRenderDrawColor(
+                        renderer, 255, 215, 90, 255
+                    );
+                
+                    const float diagonal = radius * 0.45f;
+                
+                    SDL_RenderLine(
+                        renderer,
+                        centerX - diagonal,
+                        centerY - diagonal,
+                        centerX + diagonal,
+                        centerY + diagonal
+                    );
+                
+                    SDL_RenderLine(
+                        renderer,
+                        centerX - diagonal,
+                        centerY + diagonal,
+                        centerX + diagonal,
+                        centerY - diagonal
+                    );
+                }
+
             }
         }
     }
